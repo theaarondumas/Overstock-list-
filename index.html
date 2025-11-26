@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Providence Holy Cross – Backorder & Stock Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Basic security-oriented meta (still a static page, no PHI) -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="referrer" content="no-referrer" />
+
+  <style>
+    :root {
+      --ok-bg: #e8f5e9;
+      --ok-text: #2e7d32;
+      --ok-border: #2e7d32;
+
+      --low-bg: #fff8e1;
+      --low-text: #ff6f00;
+      --low-border: #ff6f00;
+
+      --bo-bg: #ffebee;
+      --bo-text: #b71c1c;
+      --bo-border: #b71c1c;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      line-height: 1.5;
+      font-size: 16px;
+      background: #f7f7f7;
+    }
+
+    /* Branding header */
+    .brand-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: #0053a0;
+      position: relative;
+    }
+
+    .brand-mark::before,
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      background: #ffffff;
+    }
+
+    .brand-mark::before {
+      width: 60%;
+      height: 20%;
+      top: 40%;
+      left: 20%;
+    }
+
+    .brand-mark::after {
+      width: 20%;
+      height: 60%;
+      top: 20%;
+      left: 40%;
+    }
+
+    .brand-text-main {
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #003366;
+    }
+
+    .brand-text-sub {
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    h1 {
+      margin: 8px 0 4px;
+      font-size: 1.6rem;
+    }
+
+    p {
+      margin-top: 0;
+      color: #555;
+      font-size: 0.95rem;
+    }
+
+    .top-actions {
+      margin: 12px 0 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .top-actions button {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      border-radius: 4px;
+      border: 1px solid #888;
+      background: #ffffff;
+      cursor: pointer;
+    }
+
+    .top-actions button:hover {
+      background: #f0f0f0;
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: #666;
+    }
+
+    /* Status summary chips */
+    .summary-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 6px 0 12px;
+    }
+
+    .summary-chip {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid #ccc;
+      background: #fff;
+    }
+
+    .summary-chip.bo {
+      background: var(--bo-bg);
+      color: var(--bo-text);
+      border-color: var(--bo-border);
+    }
+    .summary-chip.low {
+      background: var(--low-bg);
+      color: var(--low-text);
+      border-color: var(--low-border);
+    }
+    .summary-chip.ok {
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      border-color: var(--ok-border);
+    }
+
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      min-width: 1000px;
+      background: #ffffff;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      font-size: 0.85rem;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* Make key columns wider */
+    th:nth-child(1), td:nth-child(1) { min-width: 220px; } /* Item */
+    th:nth-child(2), td:nth-child(2) { min-width: 120px; } /* Dept */
+    th:nth-child(3), td:nth-child(3) { min-width: 120px; } /* Vendor/No */
+
+    tr:nth-child(even) {
+      background-color: #fcfcfc;
+    }
+
+    /* Row status highlighting */
+    .row-ok {
+      background-color: #f9fff9;
+    }
+    .row-low {
+      background-color: #fffaf0;
+    }
+    .row-bo {
+      background-color: #fff7f7;
+    }
+
+    .status-pill {
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .pill-ok {
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      border: 1px solid var(--ok-border);
+    }
+    .pill-low {
+      background: var(--low-bg);
+      color: var(--low-text);
+      border: 1px solid var(--low-border);
+    }
+    .pill-bo {
+      background: var(--bo-bg);
+      color: var(--bo-text);
+      border: 1px solid var(--bo-border);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      font-size: 0.8rem;
+      padding: 3px 4px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    input[type="number"] {
+      text-align: right;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 28px;
+      max-height: 80px;
+    }
+
+    .delete-btn {
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #b71c1c;
+      background: #ffebee;
+      color: #b71c1c;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background: #ffcdd2;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 12px;
+        font-size: 15px;
+      }
+
+      h1 {
+        font-size: 1.3rem;
+      }
+
+      th, td {
+        font-size: 0.8rem;
+        padding: 6px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="brand-header">
+    <div class="brand-mark"></div>
+    <div>
+      <div class="brand-text-main">Providence Holy Cross Medical Center</div>
+      <div class="brand-text-sub">Backordered & Low Stock Supply Dashboard</div>
+    </div>
+  </div>
+
+  <h1>Backorder & Stock Dashboard</h1>
+  <p>
+    Track backordered, low stock, and available supplies.  
+    Status is based on <strong>On Hand vs Par Level</strong> and vendor status.
+  </p>
+
+  <div class="top-actions">
+    <button id="addItemButton" type="button">Add new blank item</button>
+    <button id="resetButton" type="button">Reset to sample list</button>
+    <span class="hint">(Data is saved locally in this browser using localStorage. Do not enter patient information.)</span>
+  </div>
+
+  <div class="summary-row">
+    <div class="summary-chip bo">Backordered / Out: <span id="countBo">0</span></div>
+    <div class="summary-chip low">Low stock: <span id="countLow">0</span></div>
+    <div class="summary-chip ok">OK / Available: <span id="countOk">0</span></div>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Item Name</th>
+          <th>Dept / Unit</th>
+          <th>Vendor / Item #</th>
+          <th>On Hand</th>
+          <th>Par Level</th>
+          <th>On Order</th>
+          <th>Vendor Status</th>
+          <th>System Status</th>
+          <th>Notes</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // =========================
+    // 1 — CONFIG & DEFAULT DATA
+    // =========================
+    const STORAGE_KEY = "phcm_backorder_dashboard_v1";
+
+    // Generic sample data ONLY – replace with your real supply items.
+    const defaultItems = [
+      {
+        id: "i1",
+        name: "Nitrile Exam Gloves Medium",
+        dept: "2 SOUTH",
+        vendor_item: "Medline MDS2501",
+        on_hand: 3,
+        par_level: 10,
+        on_order: 5,
+        vendor_status: "Backordered",
+        notes: "Using alternate brand where available."
+      },
+      {
+        id: "i2",
+        name: "IV Start Kit",
+        dept: "3 EAST",
+        vendor_item: "Cardinal IVK-100",
+        on_hand: 15,
+        par_level: 30,
+        on_order: 0,
+        vendor_status: "Normal",
+        notes: ""
+      },
+      {
+        id: "i3",
+        name: "10 mL Saline Flush",
+        dept: "ED",
+        vendor_item: "BD 306559",
+        on_hand: 120,
+        par_level: 100,
+        on_order: 200,
+        vendor_status: "Normal",
+        notes: ""
+      },
+      {
+        id: "i4",
+        name: "Suction Canister 1200 mL",
+        dept: "ICU",
+        vendor_item: "Medline DYND50265",
+        on_hand: 0,
+        par_level: 20,
+        on_order: 40,
+        vendor_status: "Backordered",
+        notes: "Priority for next truck."
+      }
+    ];
+
+    let items = [];
+    let nextId = 1000;
+
+    // =========================
+    // 2 — HELPERS
+    // =========================
+    function loadItems() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          items = JSON.parse(raw);
+        } else {
+          items = defaultItems.map(x => ({ ...x }));
+        }
+      } catch (e) {
+        console.warn("Error loading items:", e);
+        items = defaultItems.map(x => ({ ...x }));
+      }
+
+      nextId =
+        items.reduce((max, it) => {
+          const num = parseInt(String(it.id).replace(/\D/g, ""), 10);
+          return isNaN(num) ? max : Math.max(max, num);
+        }, 1000) + 1;
+    }
+
+    function saveItems() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      } catch (e) {
+        console.warn("Error saving items:", e);
+      }
+    }
+
+    function resetItems() {
+      if (!confirm("Reset to sample list? This will erase current entries on this device.")) return;
+      items = defaultItems.map(x => ({ ...x }));
+      saveItems();
+      renderTable();
+    }
+
+    function computeStatus(item) {
+      const onHand = Number(item.on_hand) || 0;
+      const par = Number(item.par_level) || 0;
+      const vendor = (item.vendor_status || "").toLowerCase();
+
+      if (vendor === "backordered" || vendor === "out" || onHand <= 0) {
+        return "bo"; // backordered / out
+      }
+      if (par > 0 && onHand < par) {
+        return "low";
+      }
+      return "ok";
+    }
+
+    // =========================
+    // 3 — RENDER
+    // =========================
+    function renderTable() {
+      const tbody = document.getElementById("itemsBody");
+      tbody.innerHTML = "";
+
+      let countBo = 0, countLow = 0, countOk = 0;
+
+      items.forEach(item => {
+        const status = computeStatus(item);
+        if (status === "bo") countBo++;
+        else if (status === "low") countLow++;
+        else countOk++;
+
+        const tr = document.createElement("tr");
+        tr.className =
+          status === "bo" ? "row-bo" :
+          status === "low" ? "row-low" :
+          "row-ok";
+
+        const statusLabel =
+          status === "bo" ? "Backordered / Out" :
+          status === "low" ? "Low stock" :
+          "OK";
+
+        const pillClass =
+          status === "bo" ? "pill-bo" :
+          status === "low" ? "pill-low" :
+          "pill-ok";
+
+        tr.innerHTML = `
+          <td>
+            <input type="text" data-id="${item.id}" data-field="name" value="${item.name || ""}">
+          </td>
+          <td>
+            <input type="text" data-id="${item.id}" data-field="dept" value="${item.dept || ""}">
+          </td>
+          <td>
+            <input type="text" data-id="${item.id}" data-field="vendor_item" value="${item.vendor_item || ""}">
+          </td>
+          <td>
+            <input type="number" min="0" data-id="${item.id}" data-field="on_hand" value="${item.on_hand ?? ""}">
+          </td>
+          <td>
+            <input type="number" min="0" data-id="${item.id}" data-field="par_level" value="${item.par_level ?? ""}">
+          </td>
+          <td>
+            <input type="number" min="0" data-id="${item.id}" data-field="on_order" value="${item.on_order ?? ""}">
+          </td>
+          <td>
+            <select data-id="${item.id}" data-field="vendor_status">
+              <option value="Normal" ${item.vendor_status === "Normal" ? "selected" : ""}>Normal</option>
+              <option value="Backordered" ${item.vendor_status === "Backordered" ? "selected" : ""}>Backordered</option>
+              <option value="Out" ${item.vendor_status === "Out" ? "selected" : ""}>Out</option>
+            </select>
+          </td>
+          <td>
+            <span class="status-pill ${pillClass}">${statusLabel}</span>
+          </td>
+          <td>
+            <textarea data-id="${item.id}" data-field="notes">${item.notes || ""}</textarea>
+          </td>
+          <td>
+            <button type="button" class="delete-btn" data-action="delete" data-id="${item.id}">X</button>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      // update summary chips
+      document.getElementById("countBo").textContent = countBo;
+      document.getElementById("countLow").textContent = countLow;
+      document.getElementById("countOk").textContent = countOk;
+
+      attachListeners();
+    }
+
+    // =========================
+    // 4 — LISTENERS
+    // =========================
+    function attachListeners() {
+      const tbody = document.getElementById("itemsBody");
+
+      // Text + textarea: save without re-render
+      tbody.querySelectorAll("input[type='text'][data-id], textarea[data-id]").forEach(el => {
+        el.addEventListener("input", () => {
+          const id = el.getAttribute("data-id");
+          const field = el.getAttribute("data-field");
+          const idx = items.findIndex(it => String(it.id) === String(id));
+          if (idx === -1) return;
+          items[idx][field] = el.value;
+          saveItems();
+        });
+      });
+
+      // Numeric + vendor status: change → recompute row status (re-render)
+      tbody.querySelectorAll("input[type='number'][data-id], select[data-id]").forEach(el => {
+        el.addEventListener("change", () => {
+          const id = el.getAttribute("data-id");
+          const field = el.getAttribute("data-field");
+          const idx = items.findIndex(it => String(it.id) === String(id));
+          if (idx === -1) return;
+          if (el.type === "number") {
+            items[idx][field] = el.value === "" ? "" : Number(el.value);
+          } else {
+            items[idx][field] = el.value;
+          }
+          saveItems();
+          renderTable();
+        });
+      });
+
+      // Delete buttons
+      tbody.querySelectorAll("button[data-action='delete']").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-id");
+          items = items.filter(it => String(it.id) !== String(id));
+          saveItems();
+          renderTable();
+        });
+      });
+    }
+
+    function addNewItem() {
+      const newItem = {
+        id: "i" + nextId++,
+        name: "",
+        dept: "",
+        vendor_item: "",
+        on_hand: "",
+        par_level: "",
+        on_order: "",
+        vendor_status: "Normal",
+        notes: ""
+      };
+      items.push(newItem);
+      saveItems();
+      renderTable();
+    }
+
+    // =========================
+    // 5 — INIT
+    // =========================
+    document.addEventListener("DOMContentLoaded", () => {
+      loadItems();
+      renderTable();
+
+      document.getElementById("addItemButton").addEventListener("click", addNewItem);
+      document.getElementById("resetButton").addEventListener("click", resetItems);
+    });
+  </script>
+</body>
+</html>

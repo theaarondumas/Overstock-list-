@@ -7,6 +7,9 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="referrer" content="no-referrer" />
 
+  <!-- Power BI JavaScript client (for embedding) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/powerbi-client/2.23.0/powerbi.min.js"></script>
+
   <style>
     :root {
       --ok-bg: #e8f5e9;
@@ -342,6 +345,36 @@
       background: #e0e0e0;
     }
 
+    /* Power BI panel */
+    .powerbi-panel {
+      margin-top: 20px;
+      padding-top: 10px;
+    }
+
+    .powerbi-header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .powerbi-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    #powerbiContainer {
+      margin-top: 10px;
+      min-height: 360px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #ddd;
+      background: #111827;
+    }
+
     @media (max-width: 768px) {
       body {
         padding: 12px;
@@ -374,12 +407,14 @@
     Track backordered, low stock, and available supplies.<br>
     Status is based on <strong>On Hand vs Par Level</strong> and vendor status.<br>
     You can attach a <strong>photo</strong> of each item and scan the <strong>barcode</strong>
-    to auto-fill Vendor / Item #.
+    to auto-fill Vendor / Item #. Power BI can then use this data for live analytics.
   </p>
 
   <div class="top-actions">
     <button id="addItemButton" type="button">Add new blank item</button>
     <button id="resetButton" type="button">Reset to sample list</button>
+    <button id="syncAllPowerBIButton" type="button">Sync all items to Power BI</button>
+    <button id="openReportButton" type="button">Open Power BI report</button>
     <span class="hint">
       (Data & photos are saved locally in this browser using localStorage. Do not enter patient information.)
     </span>
@@ -412,6 +447,17 @@
     </table>
   </div>
 
+  <!-- Power BI analytics panel -->
+  <div class="powerbi-panel">
+    <div class="powerbi-header">
+      <h2>Power BI Backorder Analytics</h2>
+      <span class="hint">
+        This embedded view should be connected to the same dataset your dashboard sends to.
+      </span>
+    </div>
+    <div id="powerbiContainer"></div>
+  </div>
+
   <!-- Barcode scanner overlay -->
   <div id="scannerOverlay" class="scanner-overlay" style="display:none;">
     <div class="scanner-box">
@@ -435,6 +481,36 @@
     // 1 — CONFIG & DEFAULT DATA
     // =========================
     const STORAGE_KEY = "phcm_backorder_dashboard_v3";
+
+    // ===== Power BI CONFIG =====
+    // 1) STREAMING / PUSH DATASET URL (from Power BI)
+    //    Looks like:
+    //    https://api.powerbi.com/beta/.../datasets/.../rows?key=YOUR_KEY
+    const POWER_BI_PUSH_URL =
+      "https://api.powerbi.com/beta/YOUR_TENANT_ID/YOUR_WORKSPACE_ID/datasets/YOUR_DATASET_ID/rows?key=YOUR_PUSH_KEY";
+
+    // 2) Full report URL in the Power BI Service (for the "Open report" button)
+    const POWER_BI_FULL_REPORT_URL =
+      "https://app.powerbi.com/groups/YOUR_WORKSPACE_ID/reports/YOUR_REPORT_ID/ReportSection";
+
+    // 3) Embed config (ONLY if you are using embed tokens from a backend).
+    //    For now this is a placeholder. Once your backend returns real values,
+    //    you can fill these in and call embedPowerBIReport().
+    const POWER_BI_EMBED_CONFIG = {
+      type: "report",
+      id: "YOUR_REPORT_ID",
+      embedUrl: "https://app.powerbi.com/reportEmbed?reportId=YOUR_REPORT_ID&groupId=YOUR_WORKSPACE_ID",
+      accessToken: "YOUR_EMBED_TOKEN", // get from your backend
+      tokenType: window["powerbi-client"]
+        ? window["powerbi-client"].models.TokenType.Embed
+        : null,
+      settings: {
+        panes: {
+          filters: { visible: false },
+          pageNavigation: { visible: true }
+        }
+      }
+    };
 
     const defaultItems = [
       {
@@ -533,6 +609,9 @@
       items = defaultItems.map(x => ({ ...x }));
       saveItems();
       renderTable();
+
+      // Optional: also sync the sample set to Power BI
+      // syncAllItemsToPowerBI();
     }
 
     function computeStatus(item) {
@@ -550,7 +629,153 @@
     }
 
     // =========================
-    // 3 — BARCODE SCANNING
+    // 3 — POWER BI INTEGRATION
+    // =========================
+    function powerBIConfiguredForPush() {
+      return (
+        POWER_BI_PUSH_URL &&
+        !POWER_BI_PUSH_URL.includes("YOUR_TENANT_ID") &&
+        !POWER_BI_PUSH_URL.includes("YOUR_DATASET_ID") &&
+        !POWER_BI_PUSH_URL.includes("YOUR_PUSH_KEY")
+      );
+    }
+
+    async function pushItemToPowerBI(item) {
+      if (!powerBIConfiguredForPush()) {
+        // Silent no-op until you configure real URL
+        return;
+      }
+
+      const statusCode = computeStatus(item);
+      const systemStatus =
+        statusCode === "bo"
+          ? "Backordered / Out"
+          : statusCode === "low"
+          ? "Low stock"
+          : "OK";
+
+      // Define one row for your streaming/push dataset.
+      // Make sure your Power BI dataset has matching columns.
+      const row = {
+        ItemName: item.name || "",
+        Department: item.dept || "",
+        VendorItem: item.vendor_item || "",
+        OnHand: Number(item.on_hand) || 0,
+        ParLevel: Number(item.par_level) || 0,
+        OnOrder: Number(item.on_order) || 0,
+        VendorStatus: item.vendor_status || "",
+        SystemStatus: systemStatus,
+        Notes: item.notes || "",
+        // Good for trending/time series
+        Timestamp: new Date().toISOString()
+      };
+
+      try {
+        const res = await fetch(POWER_BI_PUSH_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify([row])
+        });
+
+        if (!res.ok) {
+          console.error("Failed to push to Power BI:", await res.text());
+        }
+      } catch (err) {
+        console.error("Error pushing to Power BI:", err);
+      }
+    }
+
+    async function syncAllItemsToPowerBI() {
+      if (!powerBIConfiguredForPush()) {
+        alert("Configure POWER_BI_PUSH_URL in the script before syncing to Power BI.");
+        return;
+      }
+      if (!items.length) {
+        alert("No items to sync.");
+        return;
+      }
+
+      // Simple approach: send all current items as one batch.
+      const payload = items.map(item => {
+        const statusCode = computeStatus(item);
+        const systemStatus =
+          statusCode === "bo"
+            ? "Backordered / Out"
+            : statusCode === "low"
+            ? "Low stock"
+            : "OK";
+        return {
+          ItemName: item.name || "",
+          Department: item.dept || "",
+          VendorItem: item.vendor_item || "",
+          OnHand: Number(item.on_hand) || 0,
+          ParLevel: Number(item.par_level) || 0,
+          OnOrder: Number(item.on_order) || 0,
+          VendorStatus: item.vendor_status || "",
+          SystemStatus: systemStatus,
+          Notes: item.notes || "",
+          Timestamp: new Date().toISOString()
+        };
+      });
+
+      try {
+        const res = await fetch(POWER_BI_PUSH_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          console.error("Failed to sync all to Power BI:", await res.text());
+          alert("Sync to Power BI failed. Check console for details.");
+        } else {
+          alert("All items synced to Power BI dataset.");
+        }
+      } catch (err) {
+        console.error("Error syncing to Power BI:", err);
+        alert("Sync to Power BI error. Check console for details.");
+      }
+    }
+
+    function openPowerBIReport() {
+      if (
+        !POWER_BI_FULL_REPORT_URL ||
+        POWER_BI_FULL_REPORT_URL.includes("YOUR_WORKSPACE_ID") ||
+        POWER_BI_FULL_REPORT_URL.includes("YOUR_REPORT_ID")
+      ) {
+        alert("Set POWER_BI_FULL_REPORT_URL in the script to open your Power BI report.");
+        return;
+      }
+      window.open(POWER_BI_FULL_REPORT_URL, "_blank");
+    }
+
+    function embedPowerBIReport() {
+      if (!window["powerbi-client"]) {
+        console.warn("powerbi-client not loaded.");
+        return;
+      }
+      if (
+        !POWER_BI_EMBED_CONFIG ||
+        !POWER_BI_EMBED_CONFIG.accessToken ||
+        POWER_BI_EMBED_CONFIG.accessToken === "YOUR_EMBED_TOKEN"
+      ) {
+        console.warn("Power BI embed config not set yet.");
+        return;
+      }
+
+      const powerbiContainer = document.getElementById("powerbiContainer");
+      const powerbi = new window["powerbi-client"].service.Service(
+        window["powerbi-client"].factories.hpmFactory,
+        window["powerbi-client"].factories.wpmpFactory,
+        window["powerbi-client"].factories.routerFactory
+      );
+
+      powerbi.reset(powerbiContainer);
+      powerbi.embed(powerbiContainer, POWER_BI_EMBED_CONFIG);
+    }
+
+    // =========================
+    // 4 — BARCODE SCANNING
     // =========================
     async function startScanForItem(itemId) {
       currentScanItemId = itemId;
@@ -598,6 +823,9 @@
       saveItems();
       stopScan();
       renderTable();
+
+      // Push updated row to Power BI
+      pushItemToPowerBI(items[idx]);
     }
 
     function stopScan() {
@@ -610,7 +838,7 @@
     }
 
     // =========================
-    // 4 — RENDER
+    // 5 — RENDER
     // =========================
     function renderTable() {
       const tbody = document.getElementById("itemsBody");
@@ -698,7 +926,7 @@
     }
 
     // =========================
-    // 5 — LISTENERS
+    // 6 — LISTENERS
     // =========================
     function attachListeners() {
       const tbody = document.getElementById("itemsBody");
@@ -712,6 +940,9 @@
           if (idx === -1) return;
           items[idx][field] = el.value;
           saveItems();
+
+          // Push updated row to Power BI
+          pushItemToPowerBI(items[idx]);
         });
       });
 
@@ -729,6 +960,9 @@
           }
           saveItems();
           renderTable();
+
+          // Push updated row to Power BI
+          pushItemToPowerBI(items[idx]);
         });
       });
 
@@ -756,6 +990,8 @@
             items[idx].photoData = e.target.result;
             saveItems();
             renderTable();
+
+            // Optional: you could push to Power BI, but photos usually stay local.
           };
           reader.readAsDataURL(file);
         });
@@ -776,6 +1012,7 @@
           items = items.filter(it => String(it.id) !== String(id));
           saveItems();
           renderTable();
+          // You can optionally sync to Power BI again here.
         });
       });
     }
@@ -796,10 +1033,13 @@
       items.push(newItem);
       saveItems();
       renderTable();
+
+      // Push new row to Power BI
+      pushItemToPowerBI(newItem);
     }
 
     // =========================
-    // 6 — INIT
+    // 7 — INIT
     // =========================
     document.addEventListener("DOMContentLoaded", () => {
       loadItems();
@@ -808,6 +1048,19 @@
       document.getElementById("addItemButton").addEventListener("click", addNewItem);
       document.getElementById("resetButton").addEventListener("click", resetItems);
       document.getElementById("scannerCancelBtn").addEventListener("click", stopScan);
+
+      const syncBtn = document.getElementById("syncAllPowerBIButton");
+      if (syncBtn) {
+        syncBtn.addEventListener("click", syncAllItemsToPowerBI);
+      }
+
+      const openReportBtn = document.getElementById("openReportButton");
+      if (openReportBtn) {
+        openReportBtn.addEventListener("click", openPowerBIReport);
+      }
+
+      // Once your embed token + IDs are real, uncomment this to show the embedded report:
+      // embedPowerBIReport();
     });
   </script>
 </body>

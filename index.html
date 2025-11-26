@@ -182,8 +182,8 @@
     /* Make key columns wider */
     th:nth-child(1), td:nth-child(1) { min-width: 220px; } /* Item */
     th:nth-child(2), td:nth-child(2) { min-width: 120px; } /* Dept */
-    th:nth-child(3), td:nth-child(3) { min-width: 120px; } /* Vendor/No */
-    th:nth-child(4), td:nth-child(4) { min-width: 120px; } /* Photo */
+    th:nth-child(3), td:nth-child(3) { min-width: 140px; } /* Vendor/No */
+    th:nth-child(4), td:nth-child(4) { min-width: 140px; } /* Photo */
 
     tr:nth-child(even) {
       background-color: #fcfcfc;
@@ -436,7 +436,6 @@
     // =========================
     const STORAGE_KEY = "phcm_backorder_dashboard_v3";
 
-    // Sample data ONLY – replace with real supply items.
     const defaultItems = [
       {
         id: "i1",
@@ -506,8 +505,6 @@
         } else {
           items = defaultItems.map(x => ({ ...x }));
         }
-
-        // ensure photoData exists on older saved records
         items.forEach(it => {
           if (!("photoData" in it)) it.photoData = "";
         });
@@ -544,7 +541,7 @@
       const vendor = (item.vendor_status || "").toLowerCase();
 
       if (vendor === "backordered" || vendor === "out" || onHand <= 0) {
-        return "bo"; // backordered / out
+        return "bo";
       }
       if (par > 0 && onHand < par) {
         return "low";
@@ -567,16 +564,28 @@
 
       try {
         const devices = await codeReader.listVideoInputDevices();
-        const firstDeviceId = devices[0] && devices[0].deviceId;
 
-        await codeReader.decodeFromVideoDevice(firstDeviceId, video, (result, err) => {
+        // Try to pick a back-facing / environment camera
+        let backCam = devices.find(d =>
+          (d.label || "").toLowerCase().includes("back") ||
+          (d.label || "").toLowerCase().includes("environment")
+        );
+
+        if (!backCam && devices.length > 1) {
+          // Fallback: last camera is often the rear one
+          backCam = devices[devices.length - 1];
+        }
+
+        const chosenDeviceId = (backCam ? backCam.deviceId : devices[0]?.deviceId);
+
+        await codeReader.decodeFromVideoDevice(chosenDeviceId, video, (result, err) => {
           if (result) {
             handleScanResult(result.getText());
           }
         });
       } catch (err) {
         console.error(err);
-        alert("Unable to start camera / scanner. Check permissions on this device.");
+        alert("Unable to start camera / scanner. Check camera permissions on this device.");
         stopScan();
       }
     }
@@ -681,7 +690,6 @@
         tbody.appendChild(tr);
       });
 
-      // update summary chips
       document.getElementById("countBo").textContent = countBo;
       document.getElementById("countLow").textContent = countLow;
       document.getElementById("countOk").textContent = countOk;
@@ -695,7 +703,7 @@
     function attachListeners() {
       const tbody = document.getElementById("itemsBody");
 
-      // Text + textarea: save without full re-render
+      // Text + textarea
       tbody.querySelectorAll("input[type='text'][data-id], textarea[data-id]").forEach(el => {
         el.addEventListener("input", () => {
           const id = el.getAttribute("data-id");
@@ -707,7 +715,7 @@
         });
       });
 
-      // Numeric + vendor status: change → recompute row status (re-render)
+      // Numbers + vendor status
       tbody.querySelectorAll("input[type='number'][data-id], select[data-id]").forEach(el => {
         el.addEventListener("change", () => {
           const id = el.getAttribute("data-id");
@@ -724,7 +732,7 @@
         });
       });
 
-      // Photo buttons: open hidden file input
+      // Photo buttons
       tbody.querySelectorAll(".photo-btn").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-id");
@@ -733,7 +741,7 @@
         });
       });
 
-      // File inputs: read image as data URL and save
+      // Photo input -> FileReader
       tbody.querySelectorAll(".photo-input").forEach(input => {
         input.addEventListener("change", () => {
           const file = input.files && input.files[0];
@@ -745,7 +753,7 @@
 
           const reader = new FileReader();
           reader.onload = function(e) {
-            items[idx].photoData = e.target.result; // base64 data URL
+            items[idx].photoData = e.target.result;
             saveItems();
             renderTable();
           };

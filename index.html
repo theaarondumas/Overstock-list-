@@ -163,7 +163,7 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 8px;
-      min-width: 1000px;
+      min-width: 1100px;
       background: #ffffff;
     }
 
@@ -171,6 +171,7 @@
       border: 1px solid #ddd;
       padding: 8px;
       font-size: 0.85rem;
+      vertical-align: top;
     }
 
     th {
@@ -183,6 +184,7 @@
     th:nth-child(1), td:nth-child(1) { min-width: 220px; } /* Item */
     th:nth-child(2), td:nth-child(2) { min-width: 120px; } /* Dept */
     th:nth-child(3), td:nth-child(3) { min-width: 120px; } /* Vendor/No */
+    th:nth-child(4), td:nth-child(4) { min-width: 120px; } /* Photo */
 
     tr:nth-child(even) {
       background-color: #fcfcfc;
@@ -257,6 +259,34 @@
       background: #ffcdd2;
     }
 
+    .photo-thumb {
+      max-width: 60px;
+      max-height: 60px;
+      border-radius: 4px;
+      display: block;
+      margin-bottom: 4px;
+      object-fit: cover;
+    }
+
+    .photo-hint {
+      font-size: 0.7rem;
+      color: #777;
+      margin-bottom: 4px;
+    }
+
+    .photo-btn {
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #555;
+      background: #f5f5f5;
+      cursor: pointer;
+    }
+
+    .photo-btn:hover {
+      background: #e0e0e0;
+    }
+
     @media (max-width: 768px) {
       body {
         padding: 12px;
@@ -286,14 +316,17 @@
 
   <h1>Backorder & Stock Dashboard</h1>
   <p>
-    Track backordered, low stock, and available supplies.  
-    Status is based on <strong>On Hand vs Par Level</strong> and vendor status.
+    Track backordered, low stock, and available supplies.<br>
+    Status is based on <strong>On Hand vs Par Level</strong> and vendor status.<br>
+    You can also attach a <strong>photo</strong> of each item for quick visual ID.
   </p>
 
   <div class="top-actions">
     <button id="addItemButton" type="button">Add new blank item</button>
     <button id="resetButton" type="button">Reset to sample list</button>
-    <span class="hint">(Data is saved locally in this browser using localStorage. Do not enter patient information.)</span>
+    <span class="hint">
+      (Data & photos are saved locally in this browser using localStorage. Do not enter patient information.)
+    </span>
   </div>
 
   <div class="summary-row">
@@ -309,6 +342,7 @@
           <th>Item Name</th>
           <th>Dept / Unit</th>
           <th>Vendor / Item #</th>
+          <th>Photo</th>
           <th>On Hand</th>
           <th>Par Level</th>
           <th>On Order</th>
@@ -326,9 +360,9 @@
     // =========================
     // 1 — CONFIG & DEFAULT DATA
     // =========================
-    const STORAGE_KEY = "phcm_backorder_dashboard_v1";
+    const STORAGE_KEY = "phcm_backorder_dashboard_v2";
 
-    // Generic sample data ONLY – replace with your real supply items.
+    // Sample data ONLY – replace with real supply items.
     const defaultItems = [
       {
         id: "i1",
@@ -339,7 +373,8 @@
         par_level: 10,
         on_order: 5,
         vendor_status: "Backordered",
-        notes: "Using alternate brand where available."
+        notes: "Using alternate brand where available.",
+        photoData: ""
       },
       {
         id: "i2",
@@ -350,7 +385,8 @@
         par_level: 30,
         on_order: 0,
         vendor_status: "Normal",
-        notes: ""
+        notes: "",
+        photoData: ""
       },
       {
         id: "i3",
@@ -361,7 +397,8 @@
         par_level: 100,
         on_order: 200,
         vendor_status: "Normal",
-        notes: ""
+        notes: "",
+        photoData: ""
       },
       {
         id: "i4",
@@ -372,7 +409,8 @@
         par_level: 20,
         on_order: 40,
         vendor_status: "Backordered",
-        notes: "Priority for next truck."
+        notes: "Priority for next truck.",
+        photoData: ""
       }
     ];
 
@@ -390,6 +428,11 @@
         } else {
           items = defaultItems.map(x => ({ ...x }));
         }
+
+        // ensure photoData exists on older saved records
+        items.forEach(it => {
+          if (!("photoData" in it)) it.photoData = "";
+        });
       } catch (e) {
         console.warn("Error loading items:", e);
         items = defaultItems.map(x => ({ ...x }));
@@ -473,6 +516,15 @@
             <input type="text" data-id="${item.id}" data-field="vendor_item" value="${item.vendor_item || ""}">
           </td>
           <td>
+            ${item.photoData
+              ? `<img src="${item.photoData}" alt="Item photo" class="photo-thumb">`
+              : `<div class="photo-hint">No photo yet</div>`
+            }
+            <button type="button" class="photo-btn" data-id="${item.id}">Add / Change photo</button>
+            <input type="file" accept="image/*" capture="environment"
+                   data-id="${item.id}" class="photo-input" style="display:none;">
+          </td>
+          <td>
             <input type="number" min="0" data-id="${item.id}" data-field="on_hand" value="${item.on_hand ?? ""}">
           </td>
           <td>
@@ -516,7 +568,7 @@
     function attachListeners() {
       const tbody = document.getElementById("itemsBody");
 
-      // Text + textarea: save without re-render
+      // Text + textarea: save without full re-render
       tbody.querySelectorAll("input[type='text'][data-id], textarea[data-id]").forEach(el => {
         el.addEventListener("input", () => {
           const id = el.getAttribute("data-id");
@@ -545,6 +597,35 @@
         });
       });
 
+      // Photo buttons: open hidden file input
+      tbody.querySelectorAll(".photo-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-id");
+          const input = tbody.querySelector(`.photo-input[data-id="${id}"]`);
+          if (input) input.click();
+        });
+      });
+
+      // File inputs: read image as data URL and save
+      tbody.querySelectorAll(".photo-input").forEach(input => {
+        input.addEventListener("change", () => {
+          const file = input.files && input.files[0];
+          if (!file) return;
+
+          const id = input.getAttribute("data-id");
+          const idx = items.findIndex(it => String(it.id) === String(id));
+          if (idx === -1) return;
+
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            items[idx].photoData = e.target.result; // base64 data URL
+            saveItems();
+            renderTable();
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
       // Delete buttons
       tbody.querySelectorAll("button[data-action='delete']").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -566,7 +647,8 @@
         par_level: "",
         on_order: "",
         vendor_status: "Normal",
-        notes: ""
+        notes: "",
+        photoData: ""
       };
       items.push(newItem);
       saveItems();

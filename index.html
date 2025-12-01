@@ -22,9 +22,9 @@
 
       --card-bg: #ffffff;
       --card-border: #dde2eb;
-      --table-header-bg: #f3f4f8;
       --body-bg: #f0f2f7;
       --primary: #1b4f72;
+      --primary-soft: #e3eef8;
     }
 
     * {
@@ -35,7 +35,7 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
         sans-serif;
       margin: 0;
-      padding: 16px;
+      padding: 16px 16px 32px;
       background: var(--body-bg);
       color: #222;
     }
@@ -45,6 +45,7 @@
       margin-bottom: 4px;
       color: var(--primary);
       font-size: 1.4rem;
+      letter-spacing: 0.04em;
     }
 
     .subtitle {
@@ -54,48 +55,279 @@
       margin-bottom: 12px;
     }
 
-    .top-row {
-      max-width: 1100px;
-      margin: 0 auto 10px auto;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-
-    @media (min-width: 900px) {
-      .top-row {
-        grid-template-columns: 1.1fr 0.9fr;
-      }
-    }
-
-    .layout {
-      max-width: 1100px;
+    .app-shell {
+      max-width: 480px;
       margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
     }
 
-    @media (min-width: 900px) {
-      .layout {
-        grid-template-columns: 320px 1fr;
-        align-items: start;
-      }
-    }
-
-    .card {
+    .top-card {
       background: var(--card-bg);
-      border-radius: 10px;
+      border-radius: 16px;
       border: 1px solid var(--card-border);
       padding: 12px 14px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+      margin-bottom: 12px;
     }
 
-    .card h2 {
-      margin-top: 0;
+    .top-row-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 8px;
-      font-size: 1rem;
+    }
+
+    .app-title-small {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #333;
+    }
+
+    .phc-tag {
+      font-size: 0.75rem;
+      color: #777;
+    }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .filters select,
+    .filters input {
+      border-radius: 999px;
+      border: 1px solid #c5cad5;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      background: #fbfcff;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .count-label {
+      font-size: 0.75rem;
+      color: #777;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 9px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      width: 100%;
+    }
+
+    .btn-secondary {
+      background: #e0e3ec;
+      color: #333;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #555;
+      border: 1px solid #c5cad5;
+    }
+
+    .dual-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .dual-buttons button {
+      flex: 1;
+    }
+
+    .sync-status {
+      font-size: 0.72rem;
+      margin-top: 4px;
+      color: #555;
+    }
+
+    .sync-status.ok {
+      color: #2e7d32;
+    }
+
+    .sync-status.error {
+      color: #b71c1c;
+    }
+
+    .sync-meta {
+      font-size: 0.7rem;
+      color: #777;
+    }
+
+    /* Item list */
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #555;
+      margin: 14px 0 6px;
+    }
+
+    .items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .item-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      padding: 10px 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .item-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .item-name {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .item-dept {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #666;
+    }
+
+    .item-sub {
+      font-size: 0.8rem;
+      color: #555;
+    }
+
+    .item-sub span {
+      margin-right: 8px;
+    }
+
+    .item-sub-small {
+      font-size: 0.74rem;
+      color: #777;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .status-ok {
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      border-color: var(--ok-border);
+    }
+
+    .status-low {
+      background: var(--low-bg);
+      color: var(--low-text);
+      border-color: var(--low-border);
+    }
+
+    .status-over {
+      background: var(--over-bg);
+      color: var(--over-text);
+      border-color: var(--over-border);
+    }
+
+    .item-notes {
+      font-size: 0.76rem;
+      color: #555;
+      margin-top: 2px;
+    }
+
+    .item-footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+      gap: 8px;
+    }
+
+    .item-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .item-actions button {
+      padding: 4px 8px;
+      font-size: 0.72rem;
+    }
+
+    .photo-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+
+    .no-items {
+      font-size: 0.8rem;
+      color: #777;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    /* Form sheet */
+    .form-sheet {
+      margin-top: 16px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      padding: 12px 14px 14px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .form-sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .form-sheet-title {
+      font-size: 0.9rem;
+      font-weight: 700;
       color: var(--primary);
+    }
+
+    .form-sheet-hint {
+      font-size: 0.72rem;
+      color: #777;
+      margin-bottom: 8px;
     }
 
     .form-grid {
@@ -138,158 +370,6 @@
       margin-top: 2px;
     }
 
-    .btn-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-      flex-wrap: wrap;
-    }
-
-    button {
-      border-radius: 999px;
-      border: none;
-      padding: 7px 14px;
-      font-size: 0.85rem;
-      cursor: pointer;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: #fff;
-    }
-
-    .btn-secondary {
-      background: #e0e3ec;
-      color: #333;
-    }
-
-    .btn-danger {
-      background: #b71c1c;
-      color: #fff;
-    }
-
-    .btn-ghost {
-      background: transparent;
-      color: #555;
-      border: 1px solid #c5cad5;
-    }
-
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 10px;
-      align-items: center;
-    }
-
-    .filters select,
-    .filters input {
-      border-radius: 999px;
-      border: 1px solid #c5cad5;
-      padding: 6px 10px;
-      font-size: 0.8rem;
-      background: #fbfcff;
-    }
-
-    .table-wrapper {
-      overflow-x: auto;
-      border-radius: 10px;
-      border: 1px solid var(--card-border);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
-      background: #fff;
-    }
-
-    thead {
-      background: var(--table-header-bg);
-    }
-
-    th,
-    td {
-      padding: 6px 8px;
-      border-bottom: 1px solid #e0e3ec;
-      text-align: left;
-      vertical-align: top;
-    }
-
-    th {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: #555;
-    }
-
-    tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      border: 1px solid transparent;
-      white-space: nowrap;
-    }
-
-    .status-ok {
-      background: var(--ok-bg);
-      color: var(--ok-text);
-      border-color: var(--ok-border);
-    }
-
-    .status-low {
-      background: var(--low-bg);
-      color: var(--low-text);
-      border-color: var(--low-border);
-    }
-
-    .status-over {
-      background: var(--over-bg);
-      color: var(--over-text);
-      border-color: var(--over-border);
-    }
-
-    .photo-thumb {
-      width: 50px;
-      height: 50px;
-      border-radius: 6px;
-      object-fit: cover;
-      border: 1px solid #ccc;
-      cursor: pointer;
-    }
-
-    .no-photo {
-      font-size: 0.7rem;
-      color: #999;
-    }
-
-    .count-label {
-      font-size: 0.75rem;
-      color: #777;
-    }
-
-    .actions button {
-      padding: 4px 8px;
-      font-size: 0.72rem;
-    }
-
-    .small-text {
-      font-size: 0.7rem;
-      color: #777;
-      margin-top: 4px;
-    }
-
     /* Image modal */
     .modal-backdrop {
       position: fixed;
@@ -311,59 +391,64 @@
     /* Power BI iframe */
     .pbi-frame {
       width: 100%;
-      min-height: 260px;
+      min-height: 220px;
       border: 0;
-      border-radius: 8px;
+      border-radius: 12px;
       background: #000;
+      margin-top: 8px;
     }
 
     @media (min-width: 900px) {
-      .pbi-frame {
-        min-height: 340px;
+      body {
+        padding-top: 24px;
       }
-    }
-
-    .sync-status {
-      font-size: 0.72rem;
-      margin-top: 4px;
-      color: #555;
-    }
-
-    .sync-status.ok {
-      color: #2e7d32;
-    }
-
-    .sync-status.error {
-      color: #b71c1c;
-    }
-
-    .sync-meta {
-      font-size: 0.7rem;
-      color: #777;
+      .pbi-frame {
+        min-height: 280px;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Providence Holy Cross – Overstock Tracker</h1>
-  <div class="subtitle">
-    Log overstock by department, sync to a central database, and monitor in Power BI.
-  </div>
+  <div class="app-shell">
+    <h1>OVERSTOCK TRACKER</h1>
+    <div class="subtitle">Providence Holy Cross – Supply Chain</div>
 
-  <!-- TOP: Sync + Power BI -->
-  <div class="top-row">
-    <div class="card">
-      <h2>Sync to Central Database</h2>
-      <div class="small-text">
-        This sends your overstock list from this device to a secure API (set up by IT).
-        Power BI connects to that database so leaders can see system-wide overstock.
+    <!-- Top card: filters + sync -->
+    <div class="top-card">
+      <div class="top-row-header">
+        <div>
+          <div class="app-title-small">Live Floor View</div>
+          <div class="phc-tag">Overstock by department</div>
+        </div>
+        <div class="count-label">
+          Items: <span id="item-count">0</span>
+        </div>
       </div>
 
-      <div class="btn-row" style="margin-top:10px;">
+      <div class="filters">
+        <select id="filter-dept">
+          <option value="">All Departments</option>
+          <option>2 SOUTH</option>
+          <option>2 EAST</option>
+          <option>3 NORTH</option>
+          <option>ICU</option>
+          <option>ED</option>
+          <option>OR</option>
+          <option>Other</option>
+        </select>
+        <input
+          type="text"
+          id="search-text"
+          placeholder="Search item, vendor #, notes..."
+        />
+      </div>
+
+      <div class="dual-buttons">
         <button type="button" class="btn-primary" id="sync-btn">
-          Sync All Items to Server
+          Sync to Server
         </button>
         <button type="button" class="btn-ghost" id="export-btn-top">
-          Export CSV (local backup)
+          Export CSV
         </button>
       </div>
 
@@ -371,36 +456,49 @@
         Not synced yet.
       </div>
       <div class="sync-meta">
-        Last successful sync: <span id="last-sync">–</span>
+        Last sync: <span id="last-sync">–</span>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Leadership Dashboard (Power BI)</h2>
-      <div class="small-text">
+    <!-- Item list -->
+    <div class="section-title">Overstock</div>
+    <div id="items-list" class="items-list"></div>
+    <div id="no-items" class="no-items">No items logged yet.</div>
+
+    <!-- Add item button (scrolls to form) -->
+    <div style="margin-top: 10px;">
+      <button type="button" class="btn-primary" onclick="scrollToForm()">
+        + Add Item
+      </button>
+    </div>
+
+    <!-- Power BI card -->
+    <div class="section-title">Leadership Dashboard</div>
+    <div class="top-card">
+      <div class="phc-tag">
         IT / BI can embed a secure Power BI report here (not "publish to web").
-        Replace the <code>src</code> in the iframe via code or by editing this file.
       </div>
-      <!-- 🔐 IT: set src to a secure Power BI embed URL -->
       <iframe
         id="pbi-report"
         class="pbi-frame"
         src=""
         title="Overstock Power BI Report"
       ></iframe>
-      <div class="small-text">
-        If this area is blank, the Power BI embed URL has not been configured yet.
+      <div class="sync-meta">
+        If this is blank, the Power BI embed URL has not been configured yet.
       </div>
     </div>
-  </div>
 
-  <!-- MAIN LAYOUT: form + table -->
-  <div class="layout">
-    <!-- LEFT: form -->
-    <div class="card">
-      <h2 id="form-title">Add New Item</h2>
-      <div class="small-text">
-        Fill this out while you're in the supply room. Data saves locally and can be synced.
+    <!-- Form sheet -->
+    <div id="form-sheet" class="form-sheet">
+      <div class="form-sheet-header">
+        <div class="form-sheet-title" id="form-title">Add New Item</div>
+        <button type="button" class="btn-ghost" id="reset-all-btn" style="padding:4px 10px;font-size:0.72rem;">
+          Reset Local Data
+        </button>
+      </div>
+      <div class="form-sheet-hint">
+        Fill this out in the supply room. Data stays on this device until you sync.
       </div>
 
       <form id="item-form">
@@ -503,73 +601,15 @@
           </div>
         </div>
 
-        <div class="btn-row">
+        <div class="dual-buttons" style="margin-top:10px;">
           <button type="submit" class="btn-primary" id="save-btn">
             Save Item
           </button>
           <button type="button" class="btn-secondary" id="clear-btn">
             Clear Form
           </button>
-          <button type="button" class="btn-ghost" id="reset-all-btn">
-            Reset Local Data
-          </button>
         </div>
       </form>
-    </div>
-
-    <!-- RIGHT: table -->
-    <div class="card">
-      <h2>Overstock List</h2>
-
-      <div class="filters">
-        <select id="filter-dept">
-          <option value="">All Departments</option>
-          <option>2 SOUTH</option>
-          <option>2 EAST</option>
-          <option>3 NORTH</option>
-          <option>ICU</option>
-          <option>ED</option>
-          <option>OR</option>
-          <option>Other</option>
-        </select>
-
-        <input
-          type="text"
-          id="search-text"
-          placeholder="Search item, vendor #, notes..."
-        />
-
-        <span class="count-label">
-          Items: <span id="item-count">0</span>
-        </span>
-
-        <button type="button" class="btn-ghost" id="export-btn">
-          Export CSV
-        </button>
-      </div>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Dept</th>
-              <th>Item</th>
-              <th>Qty / PAR</th>
-              <th>Status</th>
-              <th>Photo</th>
-              <th>Notes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="items-body">
-          </tbody>
-        </table>
-      </div>
-
-      <div class="small-text">
-        Local data stays in this browser until you reset. Use Sync to send a copy
-        to the central database for Power BI.
-      </div>
     </div>
   </div>
 
@@ -583,12 +623,8 @@
      * CONFIG (IT to edit)
      **********************/
 
-    // 🔐 IT: replace this with your secure API endpoint
-    // Example: "https://YOUR-FUNCTION-APP.azurewebsites.net/api/overstock/ingest"
-    const API_ENDPOINT = "";
-
-    // 🔐 IT / BI: set a secure Power BI embed URL here if you want via JS instead of hard-coded in HTML
-    const POWER_BI_EMBED_URL = ""; // e.g. "https://app.powerbi.com/reportEmbed?reportId=...&groupId=..."
+    const API_ENDPOINT = "";         // IT: your secure API URL
+    const POWER_BI_EMBED_URL = "";  // IT: your Power BI embed URL
 
     /**********************
      * LOCAL APP LOGIC
@@ -673,101 +709,108 @@
       });
     }
 
-    function renderTable() {
-      const tbody = document.getElementById("items-body");
-      tbody.innerHTML = "";
+    function renderList() {
+      const listEl = document.getElementById("items-list");
+      const emptyEl = document.getElementById("no-items");
+      listEl.innerHTML = "";
 
       const filtered = applyFilters(items);
       document.getElementById("item-count").textContent = filtered.length;
 
       if (filtered.length === 0) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 7;
-        td.textContent = "No items logged yet.";
-        td.style.textAlign = "center";
-        td.style.color = "#777";
-        tr.appendChild(td);
-        tbody.appendChild(tr);
+        emptyEl.style.display = "block";
         return;
       }
+      emptyEl.style.display = "none";
 
       filtered.forEach((item) => {
-        const tr = document.createElement("tr");
-
-        const tdDept = document.createElement("td");
-        tdDept.innerHTML = `
-          <div>${item.department || ""}</div>
-          <div class="small-text">${item.location || ""}</div>
-        `;
-        tr.appendChild(tdDept);
-
-        const tdItem = document.createElement("td");
-        tdItem.innerHTML = `
-          <div><strong>${item.itemName || ""}</strong></div>
-          <div class="small-text">${item.itemNumber || ""}</div>
-        `;
-        tr.appendChild(tdItem);
-
-        const tdQty = document.createElement("td");
-        tdQty.innerHTML = `
-          <div>${item.quantity ?? ""} / ${item.parLevel ?? ""}</div>
-          ${
-            item.expiration
-              ? `<div class="small-text">Exp: ${item.expiration}</div>`
-              : ""
-          }
-        `;
-        tr.appendChild(tdQty);
-
-        const tdStatus = document.createElement("td");
         const { label, className } = computeStatus(item);
-        const span = document.createElement("span");
-        span.className = "status-pill " + className;
-        span.textContent = label;
-        tdStatus.appendChild(span);
-        tr.appendChild(tdStatus);
 
-        const tdPhoto = document.createElement("td");
+        const card = document.createElement("div");
+        card.className = "item-card";
+
+        const topRow = document.createElement("div");
+        topRow.className = "item-top-row";
+
+        const leftInfo = document.createElement("div");
+        const nameEl = document.createElement("div");
+        nameEl.className = "item-name";
+        nameEl.textContent = item.itemName || "";
+
+        const deptEl = document.createElement("div");
+        deptEl.className = "item-dept";
+        deptEl.textContent = (item.department || "").toUpperCase();
+
+        leftInfo.appendChild(nameEl);
+        leftInfo.appendChild(deptEl);
+
+        const statusEl = document.createElement("span");
+        statusEl.className = "status-pill " + className;
+        statusEl.textContent = label;
+
+        topRow.appendChild(leftInfo);
+        topRow.appendChild(statusEl);
+
+        const middleRow = document.createElement("div");
+        middleRow.className = "item-sub";
+        middleRow.innerHTML = `
+          <span>Qty: <strong>${item.quantity ?? ""}</strong></span>
+          <span>PAR: <strong>${item.parLevel ?? ""}</strong></span>
+        `;
+
+        const subSmall = document.createElement("div");
+        subSmall.className = "item-sub-small";
+        const parts = [];
+        if (item.itemNumber) parts.push("Item #: " + item.itemNumber);
+        if (item.location) parts.push("Location: " + item.location);
+        if (item.expiration) parts.push("Exp: " + item.expiration);
+        subSmall.textContent = parts.join(" • ");
+
+        const notesEl = document.createElement("div");
+        notesEl.className = "item-notes";
+        notesEl.textContent = item.notes || "";
+
+        const footerRow = document.createElement("div");
+        footerRow.className = "item-footer-row";
+
+        const leftFooter = document.createElement("div");
         if (item.photoData) {
           const img = document.createElement("img");
           img.src = item.photoData;
           img.className = "photo-thumb";
           img.title = "Tap to enlarge";
           img.addEventListener("click", () => openPhotoModal(item.photoData));
-          tdPhoto.appendChild(img);
-        } else {
-          const spanNo = document.createElement("span");
-          spanNo.className = "no-photo";
-          spanNo.textContent = "No photo";
-          tdPhoto.appendChild(spanNo);
+          leftFooter.appendChild(img);
         }
-        tr.appendChild(tdPhoto);
 
-        const tdNotes = document.createElement("td");
-        tdNotes.textContent = item.notes || "";
-        tr.appendChild(tdNotes);
+        const actions = document.createElement("div");
+        actions.className = "item-actions";
 
-        const tdActions = document.createElement("td");
-        tdActions.className = "actions";
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "btn-secondary";
+        editBtn.textContent = "Edit";
+        editBtn.addEventListener("click", () => startEditItem(item.id));
 
-        const btnEdit = document.createElement("button");
-        btnEdit.type = "button";
-        btnEdit.className = "btn-secondary";
-        btnEdit.textContent = "Edit";
-        btnEdit.addEventListener("click", () => startEditItem(item.id));
-        tdActions.appendChild(btnEdit);
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "btn-ghost";
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", () => deleteItem(item.id));
 
-        const btnDelete = document.createElement("button");
-        btnDelete.type = "button";
-        btnDelete.className = "btn-danger";
-        btnDelete.style.marginLeft = "4px";
-        btnDelete.textContent = "Del";
-        btnDelete.addEventListener("click", () => deleteItem(item.id));
-        tdActions.appendChild(btnDelete);
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
 
-        tr.appendChild(tdActions);
-        tbody.appendChild(tr);
+        footerRow.appendChild(leftFooter);
+        footerRow.appendChild(actions);
+
+        card.appendChild(topRow);
+        card.appendChild(middleRow);
+        if (parts.length) card.appendChild(subSmall);
+        if (item.notes) card.appendChild(notesEl);
+        card.appendChild(footerRow);
+
+        listEl.appendChild(card);
       });
     }
 
@@ -834,7 +877,8 @@
 
       saveItems();
       clearForm();
-      renderTable();
+      renderList();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function startEditItem(id) {
@@ -855,14 +899,14 @@
 
       document.getElementById("form-title").textContent = "Edit Item";
       document.getElementById("save-btn").textContent = "Save Changes";
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      scrollToForm();
     }
 
     function deleteItem(id) {
       if (!confirm("Delete this item?")) return;
       items = items.filter((i) => i.id !== id);
       saveItems();
-      renderTable();
+      renderList();
     }
 
     function resetAllData() {
@@ -875,7 +919,7 @@
 
       items = [];
       saveItems();
-      renderTable();
+      renderList();
       clearForm();
     }
 
@@ -960,6 +1004,13 @@
       modal.style.display = "none";
     }
 
+    function scrollToForm() {
+      const formSheet = document.getElementById("form-sheet");
+      const rect = formSheet.getBoundingClientRect();
+      const offset = rect.top + window.scrollY - 10;
+      window.scrollTo({ top: offset, behavior: "smooth" });
+    }
+
     /**********************
      * SYNC TO SERVER + AUTO-SYNC
      **********************/
@@ -981,7 +1032,7 @@
       }
 
       if (isSyncInProgress) {
-        return; // avoid overlapping syncs
+        return;
       }
 
       isSyncInProgress = true;
@@ -1055,7 +1106,6 @@
     `;
 
     function registerManifestAndServiceWorker() {
-      // Dynamic manifest (helps Android; iOS mostly ignores it)
       try {
         const blob = new Blob([MANIFEST_JSON], { type: "application/json" });
         const manifestUrl = URL.createObjectURL(blob);
@@ -1067,7 +1117,6 @@
         console.warn("Manifest creation failed:", e);
       }
 
-      // Service worker (for PWA/offline + Add to Home Screen behavior)
       if ("serviceWorker" in navigator) {
         try {
           const swBlob = new Blob([SW_CODE], { type: "text/javascript" });
@@ -1087,7 +1136,7 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       loadItems();
-      renderTable();
+      renderList();
 
       document
         .getElementById("item-form")
@@ -1103,13 +1152,10 @@
         .addEventListener("change", handlePhotoInput);
       document
         .getElementById("filter-dept")
-        .addEventListener("change", renderTable);
+        .addEventListener("change", renderList);
       document
         .getElementById("search-text")
-        .addEventListener("input", renderTable);
-      document
-        .getElementById("export-btn")
-        .addEventListener("click", exportCSV);
+        .addEventListener("input", renderList);
       document
         .getElementById("export-btn-top")
         .addEventListener("click", exportCSV);
@@ -1127,7 +1173,6 @@
         }
       }, 5 * 60 * 1000);
 
-      // PWA setup
       registerManifestAndServiceWorker();
     });
   </script>

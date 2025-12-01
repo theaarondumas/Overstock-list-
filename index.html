@@ -41,7 +41,7 @@
 
     h1 {
       text-align: center;
-      margin-bottom: 12px;
+      margin-bottom: 4px;
       color: var(--primary);
       font-size: 1.4rem;
     }
@@ -50,7 +50,21 @@
       text-align: center;
       font-size: 0.85rem;
       color: #555;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
+    }
+
+    .top-row {
+      max-width: 1100px;
+      margin: 0 auto 10px auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    @media (min-width: 900px) {
+      .top-row {
+        grid-template-columns: 1.1fr 0.9fr;
+      }
     }
 
     .layout {
@@ -115,14 +129,6 @@
     .form-group textarea {
       min-height: 48px;
       resize: vertical;
-    }
-
-    .form-inline {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-top: 6px;
-      font-size: 0.78rem;
     }
 
     .hint {
@@ -267,15 +273,6 @@
       color: #999;
     }
 
-    .badge {
-      font-size: 0.72rem;
-      padding: 2px 6px;
-      border-radius: 999px;
-      border: 1px solid #c5cad5;
-      color: #555;
-      background: #f8f9fd;
-    }
-
     .count-label {
       font-size: 0.75rem;
       color: #777;
@@ -292,7 +289,7 @@
       margin-top: 4px;
     }
 
-    /* Simple full-screen image modal */
+    /* Image modal */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -309,20 +306,100 @@
       border-radius: 10px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     }
+
+    /* Power BI iframe */
+    .pbi-frame {
+      width: 100%;
+      min-height: 260px;
+      border: 0;
+      border-radius: 8px;
+      background: #000;
+    }
+
+    @media (min-width: 900px) {
+      .pbi-frame {
+        min-height: 340px;
+      }
+    }
+
+    .sync-status {
+      font-size: 0.72rem;
+      margin-top: 4px;
+      color: #555;
+    }
+
+    .sync-status.ok {
+      color: #2e7d32;
+    }
+
+    .sync-status.error {
+      color: #b71c1c;
+    }
+
+    .sync-meta {
+      font-size: 0.7rem;
+      color: #777;
+    }
   </style>
 </head>
 <body>
   <h1>Providence Holy Cross – Overstock Tracker</h1>
   <div class="subtitle">
-    Quickly log overstocked items by department, track quantities, and add photos from your phone.
+    Log overstock by department, sync to a central database, and monitor in Power BI.
   </div>
 
+  <!-- TOP: Sync + Power BI card -->
+  <div class="top-row">
+    <div class="card">
+      <h2>Sync to Central Database</h2>
+      <div class="small-text">
+        This sends your overstock list from this device to a secure API (set up by IT).
+        Power BI connects to that database so leaders can see system-wide overstock.
+      </div>
+
+      <div class="btn-row" style="margin-top:10px;">
+        <button type="button" class="btn-primary" id="sync-btn">
+          Sync All Items to Server
+        </button>
+        <button type="button" class="btn-ghost" id="export-btn-top">
+          Export CSV (local backup)
+        </button>
+      </div>
+
+      <div id="sync-status" class="sync-status">
+        Not synced yet.
+      </div>
+      <div class="sync-meta">
+        Last successful sync: <span id="last-sync">–</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Leadership Dashboard (Power BI)</h2>
+      <div class="small-text">
+        IT / BI can embed a secure Power BI report here (not "publish to web").
+        Replace the <code>src</code> below with your Power BI embed URL.
+      </div>
+      <!-- 🔐 IT: replace src with secure Power BI embed URL (Power BI Service / Embed) -->
+      <iframe
+        id="pbi-report"
+        class="pbi-frame"
+        src=""
+        title="Overstock Power BI Report"
+      ></iframe>
+      <div class="small-text">
+        If you see a blank area above, the embed URL hasn't been set yet.
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN LAYOUT: form + table -->
   <div class="layout">
-    <!-- LEFT PANE – FORM -->
+    <!-- LEFT: form -->
     <div class="card">
       <h2 id="form-title">Add New Item</h2>
       <div class="small-text">
-        Fill this out while you're in the supply room. Data saves automatically to this device.
+        Fill this out while you're in the supply room. Data saves locally and can be synced.
       </div>
 
       <form id="item-form">
@@ -369,7 +446,9 @@
               id="item-number"
               placeholder="Scan or type number"
             />
-            <div class="hint">You can type the number or scan using your phone's camera app.</div>
+            <div class="hint">
+              You can type the number or scan using your phone's camera app.
+            </div>
           </div>
 
           <div class="form-group">
@@ -404,7 +483,7 @@
             <label for="notes">Notes (optional)</label>
             <textarea
               id="notes"
-              placeholder="e.g., Move to 2 EAST first, box slightly damaged, etc."
+              placeholder="e.g., Move to 2 EAST first, box slightly damaged…"
             ></textarea>
           </div>
 
@@ -417,27 +496,27 @@
               capture="environment"
             />
             <div class="hint">
-              On mobile, this will try to open the <strong>back camera</strong>.
-              Take a quick photo of the box, label, or shelf.
+              On mobile this should open the back camera. Take a quick photo of
+              the box, label, or shelf.
             </div>
           </div>
         </div>
 
         <div class="btn-row">
           <button type="submit" class="btn-primary" id="save-btn">
-            <span>Save Item</span>
+            Save Item
           </button>
           <button type="button" class="btn-secondary" id="clear-btn">
             Clear Form
           </button>
           <button type="button" class="btn-ghost" id="reset-all-btn">
-            Reset All Data
+            Reset Local Data
           </button>
         </div>
       </form>
     </div>
 
-    <!-- RIGHT PANE – TABLE -->
+    <!-- RIGHT: table -->
     <div class="card">
       <h2>Overstock List</h2>
 
@@ -482,30 +561,48 @@
             </tr>
           </thead>
           <tbody id="items-body">
-            <!-- Rows injected here -->
           </tbody>
         </table>
       </div>
 
       <div class="small-text">
-        Tip: you can use this page on your phone in the supply room, then open it
-        on your desktop later – all data stays in this browser via localStorage.
+        Local data stays in this browser until you reset. Use Sync to send a copy
+        to the central database for Power BI.
       </div>
     </div>
   </div>
 
-  <!-- SIMPLE IMAGE MODAL -->
+  <!-- Image modal -->
   <div class="modal-backdrop" id="image-modal">
     <img id="modal-image" src="" alt="Item photo" />
   </div>
 
   <script>
+    /**********************
+     * CONFIG FOR IT / BI *
+     **********************/
+
+    // 🔐 IT: replace this with your secure API endpoint
+    // Example: "https://api.providence.org/phc-overstock/ingest"
+    const API_ENDPOINT = ""; // TODO by IT
+
+    // Example of how you'd add auth headers if using Azure AD / bearer token:
+    // async function getAuthHeaders() {
+    //   const token = await getAzureADTokenSomehow();
+    //   return { "Authorization": "Bearer " + token };
+    // }
+
+
+    /**********************
+     * LOCAL APP LOGIC    *
+     **********************/
+
     const STORAGE_KEY = "phc_overstock_items_v2";
+    const LAST_SYNC_KEY = "phc_overstock_last_sync";
 
     let items = [];
-    let photoDataPending = null; // holds base64 image when selecting a photo
+    let photoDataPending = null;
 
-    // Load existing data
     function loadItems() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -513,6 +610,14 @@
       } catch (e) {
         console.error("Error loading items:", e);
         items = [];
+      }
+
+      const last = localStorage.getItem(LAST_SYNC_KEY);
+      if (last) {
+        document.getElementById("last-sync").textContent = last;
+        document.getElementById("sync-status").textContent =
+          "Last sync succeeded.";
+        document.getElementById("sync-status").classList.add("ok");
       }
     }
 
@@ -584,10 +689,9 @@
         return;
       }
 
-      filtered.forEach((item, index) => {
+      filtered.forEach((item) => {
         const tr = document.createElement("tr");
 
-        // Dept
         const tdDept = document.createElement("td");
         tdDept.innerHTML = `
           <div>${item.department || ""}</div>
@@ -595,7 +699,6 @@
         `;
         tr.appendChild(tdDept);
 
-        // Item
         const tdItem = document.createElement("td");
         tdItem.innerHTML = `
           <div><strong>${item.itemName || ""}</strong></div>
@@ -603,7 +706,6 @@
         `;
         tr.appendChild(tdItem);
 
-        // Qty / PAR
         const tdQty = document.createElement("td");
         tdQty.innerHTML = `
           <div>${item.quantity ?? ""} / ${item.parLevel ?? ""}</div>
@@ -615,7 +717,6 @@
         `;
         tr.appendChild(tdQty);
 
-        // Status
         const tdStatus = document.createElement("td");
         const { label, className } = computeStatus(item);
         const span = document.createElement("span");
@@ -624,7 +725,6 @@
         tdStatus.appendChild(span);
         tr.appendChild(tdStatus);
 
-        // Photo
         const tdPhoto = document.createElement("td");
         if (item.photoData) {
           const img = document.createElement("img");
@@ -641,12 +741,10 @@
         }
         tr.appendChild(tdPhoto);
 
-        // Notes
         const tdNotes = document.createElement("td");
         tdNotes.textContent = item.notes || "";
         tr.appendChild(tdNotes);
 
-        // Actions
         const tdActions = document.createElement("td");
         tdActions.className = "actions";
 
@@ -684,9 +782,7 @@
       const dept = document.getElementById("department").value.trim();
       const location = document.getElementById("location").value.trim();
       const itemName = document.getElementById("item-name").value.trim();
-      const itemNumber = document
-        .getElementById("item-number")
-        .value.trim();
+      const itemNumber = document.getElementById("item-number").value.trim();
       const quantity = document.getElementById("quantity").value;
       const parLevel = document.getElementById("par-level").value;
       const expiration = document.getElementById("expiration").value;
@@ -717,7 +813,6 @@
       if (isEdit) {
         const index = items.findIndex((i) => i.id === editId);
         if (index !== -1) {
-          // Keep existing photo if we didn't select a new one
           if (photoDataPending === null) {
             data.photoData = items[index].photoData;
           }
@@ -746,13 +841,10 @@
       document.getElementById("expiration").value = item.expiration || "";
       document.getElementById("notes").value = item.notes || "";
 
-      // Do not pre-fill file input; browser doesn't allow that.
       photoDataPending = null;
 
       document.getElementById("form-title").textContent = "Edit Item";
       document.getElementById("save-btn").textContent = "Save Changes";
-
-      // Scroll up to form on mobile
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -766,7 +858,7 @@
     function resetAllData() {
       if (
         !confirm(
-          "This will delete ALL overstock items stored in this browser. Continue?"
+          "This will delete ALL overstock items stored in this browser (local only). Continue?"
         )
       )
         return;
@@ -786,12 +878,11 @@
 
       const reader = new FileReader();
       reader.onload = function (event) {
-        photoDataPending = event.target.result; // base64 data URL
+        photoDataPending = event.target.result;
       };
       reader.readAsDataURL(file);
     }
 
-    // Simple CSV export
     function exportCSV() {
       if (!items.length) {
         alert("No items to export.");
@@ -845,7 +936,6 @@
       URL.revokeObjectURL(url);
     }
 
-    // Image modal
     function openPhotoModal(dataUrl) {
       const modal = document.getElementById("image-modal");
       const img = document.getElementById("modal-image");
@@ -860,7 +950,67 @@
       modal.style.display = "none";
     }
 
-    // Init
+    /**********************
+     * SYNC TO SERVER     *
+     **********************/
+
+    async function syncToServer() {
+      const statusEl = document.getElementById("sync-status");
+      statusEl.classList.remove("ok", "error");
+
+      if (!API_ENDPOINT) {
+        statusEl.textContent =
+          "No API endpoint configured yet. Ask IT/BI to set API_ENDPOINT in the code.";
+        statusEl.classList.add("error");
+        return;
+      }
+
+      if (!items.length) {
+        statusEl.textContent = "Nothing to sync (no items).";
+        return;
+      }
+
+      statusEl.textContent = "Syncing to server…";
+
+      try {
+        // 🔐 IT: customize payload shape if you want
+        const payload = {
+          source: "PHC_OVERSTOCK_WEBAPP",
+          syncedAt: new Date().toISOString(),
+          items,
+        };
+
+        const headers = {
+          "Content-Type": "application/json",
+        };
+
+        // If using auth, merge auth headers here
+        // const authHeaders = await getAuthHeaders();
+        // Object.assign(headers, authHeaders);
+
+        const res = await fetch(API_ENDPOINT, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          throw new Error("Server responded with " + res.status);
+        }
+
+        const now = new Date().toLocaleString();
+        localStorage.setItem(LAST_SYNC_KEY, now);
+        document.getElementById("last-sync").textContent = now;
+        statusEl.textContent = "Sync successful.";
+        statusEl.classList.add("ok");
+      } catch (err) {
+        console.error("Sync failed:", err);
+        statusEl.textContent =
+          "Sync failed. Check your connection or ask IT to verify the API.";
+        statusEl.classList.add("error");
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       loadItems();
       renderTable();
@@ -886,8 +1036,13 @@
       document
         .getElementById("export-btn")
         .addEventListener("click", exportCSV);
+      document
+        .getElementById("export-btn-top")
+        .addEventListener("click", exportCSV);
+      document
+        .getElementById("sync-btn")
+        .addEventListener("click", syncToServer);
 
-      // Modal close
       const modal = document.getElementById("image-modal");
       modal.addEventListener("click", closePhotoModal);
     });

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Providence Holy Cross – Overstock Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1b4f72" />
 
   <style>
     :root {
@@ -348,7 +349,7 @@
     Log overstock by department, sync to a central database, and monitor in Power BI.
   </div>
 
-  <!-- TOP: Sync + Power BI card -->
+  <!-- TOP: Sync + Power BI -->
   <div class="top-row">
     <div class="card">
       <h2>Sync to Central Database</h2>
@@ -378,9 +379,9 @@
       <h2>Leadership Dashboard (Power BI)</h2>
       <div class="small-text">
         IT / BI can embed a secure Power BI report here (not "publish to web").
-        Replace the <code>src</code> below with your Power BI embed URL.
+        Replace the <code>src</code> in the iframe via code or by editing this file.
       </div>
-      <!-- 🔐 IT: replace src with secure Power BI embed URL (Power BI Service / Embed) -->
+      <!-- 🔐 IT: set src to a secure Power BI embed URL -->
       <iframe
         id="pbi-report"
         class="pbi-frame"
@@ -388,7 +389,7 @@
         title="Overstock Power BI Report"
       ></iframe>
       <div class="small-text">
-        If you see a blank area above, the embed URL hasn't been set yet.
+        If this area is blank, the Power BI embed URL has not been configured yet.
       </div>
     </div>
   </div>
@@ -579,22 +580,18 @@
 
   <script>
     /**********************
-     * CONFIG FOR IT / BI *
+     * CONFIG (IT to edit)
      **********************/
 
     // 🔐 IT: replace this with your secure API endpoint
-    // Example: "https://api.providence.org/phc-overstock/ingest"
-    const API_ENDPOINT = ""; // TODO by IT
+    // Example: "https://YOUR-FUNCTION-APP.azurewebsites.net/api/overstock/ingest"
+    const API_ENDPOINT = "";
 
-    // Example of how you'd add auth headers if using Azure AD / bearer token:
-    // async function getAuthHeaders() {
-    //   const token = await getAzureADTokenSomehow();
-    //   return { "Authorization": "Bearer " + token };
-    // }
-
+    // 🔐 IT / BI: set a secure Power BI embed URL here if you want via JS instead of hard-coded in HTML
+    const POWER_BI_EMBED_URL = ""; // e.g. "https://app.powerbi.com/reportEmbed?reportId=...&groupId=..."
 
     /**********************
-     * LOCAL APP LOGIC    *
+     * LOCAL APP LOGIC
      **********************/
 
     const STORAGE_KEY = "phc_overstock_items_v2";
@@ -602,6 +599,7 @@
 
     let items = [];
     let photoDataPending = null;
+    let isSyncInProgress = false;
 
     function loadItems() {
       try {
@@ -615,9 +613,14 @@
       const last = localStorage.getItem(LAST_SYNC_KEY);
       if (last) {
         document.getElementById("last-sync").textContent = last;
-        document.getElementById("sync-status").textContent =
-          "Last sync succeeded.";
-        document.getElementById("sync-status").classList.add("ok");
+        const statusEl = document.getElementById("sync-status");
+        statusEl.textContent = "Last sync succeeded.";
+        statusEl.classList.add("ok");
+      }
+
+      if (POWER_BI_EMBED_URL) {
+        const iframe = document.getElementById("pbi-report");
+        iframe.src = POWER_BI_EMBED_URL;
       }
     }
 
@@ -796,8 +799,15 @@
       const editId = document.getElementById("edit-index").value;
       const isEdit = editId !== "";
 
+      const makeId = () => {
+        if (window.crypto && window.crypto.randomUUID) {
+          return crypto.randomUUID();
+        }
+        return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+      };
+
       const data = {
-        id: isEdit ? editId : crypto.randomUUID(),
+        id: isEdit ? editId : makeId(),
         department: dept,
         location,
         itemName,
@@ -951,7 +961,7 @@
     }
 
     /**********************
-     * SYNC TO SERVER     *
+     * SYNC TO SERVER + AUTO-SYNC
      **********************/
 
     async function syncToServer() {
@@ -970,23 +980,21 @@
         return;
       }
 
+      if (isSyncInProgress) {
+        return; // avoid overlapping syncs
+      }
+
+      isSyncInProgress = true;
       statusEl.textContent = "Syncing to server…";
 
       try {
-        // 🔐 IT: customize payload shape if you want
         const payload = {
           source: "PHC_OVERSTOCK_WEBAPP",
           syncedAt: new Date().toISOString(),
           items,
         };
 
-        const headers = {
-          "Content-Type": "application/json",
-        };
-
-        // If using auth, merge auth headers here
-        // const authHeaders = await getAuthHeaders();
-        // Object.assign(headers, authHeaders);
+        const headers = { "Content-Type": "application/json" };
 
         const res = await fetch(API_ENDPOINT, {
           method: "POST",
@@ -1008,8 +1016,74 @@
         statusEl.textContent =
           "Sync failed. Check your connection or ask IT to verify the API.";
         statusEl.classList.add("error");
+      } finally {
+        isSyncInProgress = false;
       }
     }
+
+    /**********************
+     * PWA: manifest + service worker
+     **********************/
+
+    const MANIFEST_JSON = JSON.stringify({
+      name: "PHC Overstock Tracker",
+      short_name: "Overstock",
+      start_url: ".",
+      display: "standalone",
+      background_color: "#f0f2f7",
+      theme_color: "#1b4f72",
+      icons: []
+    });
+
+    const SW_CODE = `
+      const CACHE_NAME = "phc-overstock-cache-v1";
+      const URLS_TO_CACHE = ["./"];
+
+      self.addEventListener("install", (event) => {
+        event.waitUntil(
+          caches.open(CACHE_NAME).then((cache) => cache.addAll(URLS_TO_CACHE))
+        );
+      });
+
+      self.addEventListener("fetch", (event) => {
+        event.respondWith(
+          caches.match(event.request).then((response) => {
+            return response || fetch(event.request);
+          })
+        );
+      });
+    `;
+
+    function registerManifestAndServiceWorker() {
+      // Dynamic manifest (helps Android; iOS mostly ignores it)
+      try {
+        const blob = new Blob([MANIFEST_JSON], { type: "application/json" });
+        const manifestUrl = URL.createObjectURL(blob);
+        const link = document.createElement("link");
+        link.rel = "manifest";
+        link.href = manifestUrl;
+        document.head.appendChild(link);
+      } catch (e) {
+        console.warn("Manifest creation failed:", e);
+      }
+
+      // Service worker (for PWA/offline + Add to Home Screen behavior)
+      if ("serviceWorker" in navigator) {
+        try {
+          const swBlob = new Blob([SW_CODE], { type: "text/javascript" });
+          const swUrl = URL.createObjectURL(swBlob);
+          navigator.serviceWorker
+            .register(swUrl)
+            .catch((err) => console.error("SW registration failed:", err));
+        } catch (e) {
+          console.error("Service worker setup failed:", e);
+        }
+      }
+    }
+
+    /**********************
+     * INIT
+     **********************/
 
     document.addEventListener("DOMContentLoaded", () => {
       loadItems();
@@ -1045,6 +1119,16 @@
 
       const modal = document.getElementById("image-modal");
       modal.addEventListener("click", closePhotoModal);
+
+      // Auto-sync every 5 minutes when online
+      setInterval(() => {
+        if (navigator.onLine) {
+          syncToServer();
+        }
+      }, 5 * 60 * 1000);
+
+      // PWA setup
+      registerManifestAndServiceWorker();
     });
   </script>
 </body>

@@ -2,13 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Providence Holy Cross – Backorder & Stock Dashboard</title>
+  <title>Providence Holy Cross – Overstock Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="referrer" content="no-referrer" />
-
-  <!-- Power BI JavaScript client (for embedding) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/powerbi-client/2.23.0/powerbi.min.js"></script>
 
   <style>
     :root {
@@ -20,1047 +15,881 @@
       --low-text: #ff6f00;
       --low-border: #ff6f00;
 
-      --bo-bg: #ffebee;
-      --bo-text: #b71c1c;
-      --bo-border: #b71c1c;
+      --over-bg: #ffebee;
+      --over-text: #b71c1c;
+      --over-border: #b71c1c;
+
+      --card-bg: #ffffff;
+      --card-border: #dde2eb;
+      --table-header-bg: #f3f4f8;
+      --body-bg: #f0f2f7;
+      --primary: #1b4f72;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-      line-height: 1.5;
-      font-size: 16px;
-      background: #f7f7f7;
-    }
-
-    /* Branding header */
-    .brand-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .brand-mark {
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
-      background: #0053a0;
-      position: relative;
-    }
-
-    .brand-mark::before,
-    .brand-mark::after {
-      content: "";
-      position: absolute;
-      background: #ffffff;
-    }
-
-    .brand-mark::before {
-      width: 60%;
-      height: 20%;
-      top: 40%;
-      left: 20%;
-    }
-
-    .brand-mark::after {
-      width: 20%;
-      height: 60%;
-      top: 20%;
-      left: 40%;
-    }
-
-    .brand-text-main {
-      font-weight: bold;
-      font-size: 1.1rem;
-      color: #003366;
-    }
-
-    .brand-text-sub {
-      font-size: 0.9rem;
-      color: #555;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: var(--body-bg);
+      color: #222;
     }
 
     h1 {
-      margin: 8px 0 4px;
-      font-size: 1.6rem;
+      text-align: center;
+      margin-bottom: 12px;
+      color: var(--primary);
+      font-size: 1.4rem;
     }
 
-    p {
-      margin-top: 0;
-      color: #555;
-      font-size: 0.95rem;
-    }
-
-    .top-actions {
-      margin: 12px 0 15px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .top-actions button {
-      padding: 6px 12px;
+    .subtitle {
+      text-align: center;
       font-size: 0.85rem;
-      border-radius: 4px;
-      border: 1px solid #888;
-      background: #ffffff;
-      cursor: pointer;
+      color: #555;
+      margin-bottom: 16px;
     }
 
-    .top-actions button:hover {
-      background: #f0f0f0;
+    .layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 900px) {
+      .layout {
+        grid-template-columns: 320px 1fr;
+        align-items: start;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      padding: 12px 14px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 1rem;
+      color: var(--primary);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 10px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin-bottom: 2px;
+      color: #333;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      border-radius: 6px;
+      border: 1px solid #c5cad5;
+      padding: 6px 8px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      background: #fbfcff;
+    }
+
+    .form-group textarea {
+      min-height: 48px;
+      resize: vertical;
+    }
+
+    .form-inline {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 0.78rem;
     }
 
     .hint {
-      font-size: 0.8rem;
-      color: #666;
+      font-size: 0.7rem;
+      color: #777;
+      margin-top: 2px;
     }
 
-    /* Status summary chips */
-    .summary-row {
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: #e0e3ec;
+      color: #333;
+    }
+
+    .btn-danger {
+      background: #b71c1c;
+      color: #fff;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #555;
+      border: 1px solid #c5cad5;
+    }
+
+    .filters {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin: 6px 0 12px;
-    }
-
-    .summary-chip {
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      display: inline-flex;
+      margin-bottom: 10px;
       align-items: center;
-      gap: 4px;
-      border: 1px solid #ccc;
-      background: #fff;
     }
 
-    .summary-chip.bo {
-      background: var(--bo-bg);
-      color: var(--bo-text);
-      border-color: var(--bo-border);
-    }
-    .summary-chip.low {
-      background: var(--low-bg);
-      color: var(--low-text);
-      border-color: var(--low-border);
-    }
-    .summary-chip.ok {
-      background: var(--ok-bg);
-      color: var(--ok-text);
-      border-color: var(--ok-border);
+    .filters select,
+    .filters input {
+      border-radius: 999px;
+      border: 1px solid #c5cad5;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      background: #fbfcff;
     }
 
     .table-wrapper {
-      width: 100%;
       overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 8px;
-      min-width: 1100px;
-      background: #ffffff;
+      font-size: 0.8rem;
+      background: #fff;
     }
 
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      font-size: 0.85rem;
+    thead {
+      background: var(--table-header-bg);
+    }
+
+    th,
+    td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e0e3ec;
+      text-align: left;
       vertical-align: top;
     }
 
     th {
-      background-color: #f2f2f2;
-      font-weight: 600;
-      white-space: nowrap;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #555;
     }
 
-    /* Make key columns wider */
-    th:nth-child(1), td:nth-child(1) { min-width: 220px; } /* Item */
-    th:nth-child(2), td:nth-child(2) { min-width: 120px; } /* Dept */
-    th:nth-child(3), td:nth-child(3) { min-width: 140px; } /* Vendor/No */
-    th:nth-child(4), td:nth-child(4) { min-width: 140px; } /* Photo */
-
-    tr:nth-child(even) {
-      background-color: #fcfcfc;
-    }
-
-    /* Row status highlighting */
-    .row-ok {
-      background-color: #f9fff9;
-    }
-    .row-low {
-      background-color: #fffaf0;
-    }
-    .row-bo {
-      background-color: #fff7f7;
+    tbody tr:last-child td {
+      border-bottom: none;
     }
 
     .status-pill {
-      padding: 4px 8px;
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
       border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: bold;
-      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px solid transparent;
       white-space: nowrap;
     }
-    .pill-ok {
+
+    .status-ok {
       background: var(--ok-bg);
       color: var(--ok-text);
-      border: 1px solid var(--ok-border);
+      border-color: var(--ok-border);
     }
-    .pill-low {
+
+    .status-low {
       background: var(--low-bg);
       color: var(--low-text);
-      border: 1px solid var(--low-border);
-    }
-    .pill-bo {
-      background: var(--bo-bg);
-      color: var(--bo-text);
-      border: 1px solid var(--bo-border);
+      border-color: var(--low-border);
     }
 
-    input[type="text"],
-    input[type="number"],
-    select,
-    textarea {
-      font-size: 0.8rem;
-      padding: 3px 4px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    input[type="number"] {
-      text-align: right;
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 28px;
-      max-height: 80px;
-    }
-
-    .delete-btn {
-      font-size: 0.75rem;
-      padding: 2px 6px;
-      border-radius: 4px;
-      border: 1px solid #b71c1c;
-      background: #ffebee;
-      color: #b71c1c;
-      cursor: pointer;
-    }
-
-    .delete-btn:hover {
-      background: #ffcdd2;
+    .status-over {
+      background: var(--over-bg);
+      color: var(--over-text);
+      border-color: var(--over-border);
     }
 
     .photo-thumb {
-      max-width: 60px;
-      max-height: 60px;
-      border-radius: 4px;
-      display: block;
-      margin-bottom: 4px;
+      width: 50px;
+      height: 50px;
+      border-radius: 6px;
       object-fit: cover;
+      border: 1px solid #ccc;
+      cursor: pointer;
     }
 
-    .photo-hint {
+    .no-photo {
+      font-size: 0.7rem;
+      color: #999;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid #c5cad5;
+      color: #555;
+      background: #f8f9fd;
+    }
+
+    .count-label {
+      font-size: 0.75rem;
+      color: #777;
+    }
+
+    .actions button {
+      padding: 4px 8px;
+      font-size: 0.72rem;
+    }
+
+    .small-text {
       font-size: 0.7rem;
       color: #777;
-      margin-bottom: 4px;
-    }
-
-    .photo-btn,
-    .scan-btn {
-      font-size: 0.75rem;
-      padding: 2px 6px;
-      border-radius: 4px;
-      border: 1px solid #555;
-      background: #f7f7f7;
-      cursor: pointer;
       margin-top: 4px;
-      display: inline-block;
     }
 
-    .photo-btn:hover,
-    .scan-btn:hover {
-      background: #e4e4e4;
-    }
-
-    /* Scanner overlay */
-    .scanner-overlay {
+    /* Simple full-screen image modal */
+    .modal-backdrop {
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.75);
-      display: flex;
+      display: none;
+      align-items: center;
       justify-content: center;
-      align-items: center;
-      z-index: 9999;
+      z-index: 999;
     }
 
-    .scanner-box {
-      background: #ffffff;
+    .modal-backdrop img {
+      max-width: 96vw;
+      max-height: 96vh;
       border-radius: 10px;
-      padding: 12px;
-      max-width: 380px;
-      width: 90%;
-      text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-    }
-
-    .scanner-title {
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
-
-    #scannerVideo {
-      width: 100%;
-      border-radius: 8px;
-      background: #000;
-    }
-
-    .scanner-hint {
-      font-size: 0.75rem;
-      color: #555;
-      margin: 6px 0;
-    }
-
-    .scanner-cancel-btn {
-      margin-top: 4px;
-      padding: 4px 10px;
-      font-size: 0.8rem;
-      border-radius: 999px;
-      border: 1px solid #555;
-      background: #f0f0f0;
-      cursor: pointer;
-    }
-
-    .scanner-cancel-btn:hover {
-      background: #e0e0e0;
-    }
-
-    /* Power BI panel */
-    .powerbi-panel {
-      margin-top: 20px;
-      padding-top: 10px;
-    }
-
-    .powerbi-header {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .powerbi-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 6px;
-    }
-
-    #powerbiContainer {
-      margin-top: 10px;
-      min-height: 360px;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid #ddd;
-      background: #111827;
-    }
-
-    @media (max-width: 768px) {
-      body {
-        padding: 12px;
-        font-size: 15px;
-      }
-
-      h1 {
-        font-size: 1.3rem;
-      }
-
-      th, td {
-        font-size: 0.8rem;
-        padding: 6px;
-      }
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     }
   </style>
 </head>
-
 <body>
-  <div class="brand-header">
-    <div class="brand-mark"></div>
-    <div>
-      <div class="brand-text-main">Providence Holy Cross Medical Center</div>
-      <div class="brand-text-sub">Backordered & Low Stock Supply Dashboard</div>
-    </div>
+  <h1>Providence Holy Cross – Overstock Tracker</h1>
+  <div class="subtitle">
+    Quickly log overstocked items by department, track quantities, and add photos from your phone.
   </div>
 
-  <h1>Backorder & Stock Dashboard</h1>
-  <p>
-    Track backordered, low stock, and available supplies.<br>
-    Status is based on <strong>On Hand vs Par Level</strong> and vendor status.<br>
-    You can attach a <strong>photo</strong> of each item and scan the <strong>barcode</strong>
-    to auto-fill Vendor / Item #. Power BI can then use this data for live analytics.
-  </p>
-
-  <div class="top-actions">
-    <button id="addItemButton" type="button">Add new blank item</button>
-    <button id="resetButton" type="button">Reset to sample list</button>
-    <button id="syncAllPowerBIButton" type="button">Sync all items to Power BI</button>
-    <button id="openReportButton" type="button">Open Power BI report</button>
-    <span class="hint">
-      (Data & photos are saved locally in this browser using localStorage. Do not enter patient information.)
-    </span>
-  </div>
-
-  <div class="summary-row">
-    <div class="summary-chip bo">Backordered / Out: <span id="countBo">0</span></div>
-    <div class="summary-chip low">Low stock: <span id="countLow">0</span></div>
-    <div class="summary-chip ok">OK / Available: <span id="countOk">0</span></div>
-  </div>
-
-  <div class="table-wrapper">
-    <table>
-      <thead>
-        <tr>
-          <th>Item Name</th>
-          <th>Dept / Unit</th>
-          <th>Vendor / Item #</th>
-          <th>Photo</th>
-          <th>On Hand</th>
-          <th>Par Level</th>
-          <th>On Order</th>
-          <th>Vendor Status</th>
-          <th>System Status</th>
-          <th>Notes</th>
-          <th>Delete</th>
-        </tr>
-      </thead>
-      <tbody id="itemsBody"></tbody>
-    </table>
-  </div>
-
-  <!-- Power BI analytics panel -->
-  <div class="powerbi-panel">
-    <div class="powerbi-header">
-      <h2>Power BI Backorder Analytics</h2>
-      <span class="hint">
-        This embedded view should be connected to the same dataset your dashboard sends to.
-      </span>
-    </div>
-    <div id="powerbiContainer"></div>
-  </div>
-
-  <!-- Barcode scanner overlay -->
-  <div id="scannerOverlay" class="scanner-overlay" style="display:none;">
-    <div class="scanner-box">
-      <div class="scanner-title">Scan barcode</div>
-      <video id="scannerVideo" autoplay playsinline></video>
-      <div class="scanner-hint">
-        Point the camera at the barcode on the box / label.<br>
-        When it reads it, the Vendor / Item # field will auto-fill.
+  <div class="layout">
+    <!-- LEFT PANE – FORM -->
+    <div class="card">
+      <h2 id="form-title">Add New Item</h2>
+      <div class="small-text">
+        Fill this out while you're in the supply room. Data saves automatically to this device.
       </div>
-      <button type="button" id="scannerCancelBtn" class="scanner-cancel-btn">
-        Cancel
-      </button>
+
+      <form id="item-form">
+        <input type="hidden" id="edit-index" value="" />
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="department">Department</label>
+            <select id="department" required>
+              <option value="">Select...</option>
+              <option>2 SOUTH</option>
+              <option>2 EAST</option>
+              <option>3 NORTH</option>
+              <option>ICU</option>
+              <option>ED</option>
+              <option>OR</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="location">Supply Location (Room/Shelf)</label>
+            <input
+              type="text"
+              id="location"
+              placeholder="e.g., Core A – Shelf 2"
+            />
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="item-name">Item Description</label>
+            <input
+              type="text"
+              id="item-name"
+              placeholder="e.g., 4x4 Gauze, 18G IV Catheter"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="item-number">Vendor / Item # / Barcode</label>
+            <input
+              type="text"
+              id="item-number"
+              placeholder="Scan or type number"
+            />
+            <div class="hint">You can type the number or scan using your phone's camera app.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="quantity">Qty on Hand</label>
+            <input
+              type="number"
+              id="quantity"
+              min="0"
+              placeholder="e.g., 45"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="par-level">Target / PAR Qty</label>
+            <input
+              type="number"
+              id="par-level"
+              min="0"
+              placeholder="e.g., 20"
+              required
+            />
+            <div class="hint">Used to calculate LOW vs OVERSTOCK.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="expiration">Expiration Date (optional)</label>
+            <input type="date" id="expiration" />
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="notes">Notes (optional)</label>
+            <textarea
+              id="notes"
+              placeholder="e.g., Move to 2 EAST first, box slightly damaged, etc."
+            ></textarea>
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="photo-input">Item Photo (optional)</label>
+            <input
+              type="file"
+              id="photo-input"
+              accept="image/*"
+              capture="environment"
+            />
+            <div class="hint">
+              On mobile, this will try to open the <strong>back camera</strong>.
+              Take a quick photo of the box, label, or shelf.
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="submit" class="btn-primary" id="save-btn">
+            <span>Save Item</span>
+          </button>
+          <button type="button" class="btn-secondary" id="clear-btn">
+            Clear Form
+          </button>
+          <button type="button" class="btn-ghost" id="reset-all-btn">
+            Reset All Data
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- RIGHT PANE – TABLE -->
+    <div class="card">
+      <h2>Overstock List</h2>
+
+      <div class="filters">
+        <select id="filter-dept">
+          <option value="">All Departments</option>
+          <option>2 SOUTH</option>
+          <option>2 EAST</option>
+          <option>3 NORTH</option>
+          <option>ICU</option>
+          <option>ED</option>
+          <option>OR</option>
+          <option>Other</option>
+        </select>
+
+        <input
+          type="text"
+          id="search-text"
+          placeholder="Search item, vendor #, notes..."
+        />
+
+        <span class="count-label">
+          Items: <span id="item-count">0</span>
+        </span>
+
+        <button type="button" class="btn-ghost" id="export-btn">
+          Export CSV
+        </button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Dept</th>
+              <th>Item</th>
+              <th>Qty / PAR</th>
+              <th>Status</th>
+              <th>Photo</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="items-body">
+            <!-- Rows injected here -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="small-text">
+        Tip: you can use this page on your phone in the supply room, then open it
+        on your desktop later – all data stays in this browser via localStorage.
+      </div>
     </div>
   </div>
 
-  <!-- ZXing barcode library -->
-  <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
+  <!-- SIMPLE IMAGE MODAL -->
+  <div class="modal-backdrop" id="image-modal">
+    <img id="modal-image" src="" alt="Item photo" />
+  </div>
 
   <script>
-    // =========================
-    // 1 — CONFIG & DEFAULT DATA
-    // =========================
-    const STORAGE_KEY = "phcm_backorder_dashboard_v3";
-
-    // ===== Power BI CONFIG =====
-    // 1) STREAMING / PUSH DATASET URL (from Power BI)
-    //    Looks like:
-    //    https://api.powerbi.com/beta/.../datasets/.../rows?key=YOUR_KEY
-    const POWER_BI_PUSH_URL =
-      "https://api.powerbi.com/beta/YOUR_TENANT_ID/YOUR_WORKSPACE_ID/datasets/YOUR_DATASET_ID/rows?key=YOUR_PUSH_KEY";
-
-    // 2) Full report URL in the Power BI Service (for the "Open report" button)
-    const POWER_BI_FULL_REPORT_URL =
-      "https://app.powerbi.com/groups/YOUR_WORKSPACE_ID/reports/YOUR_REPORT_ID/ReportSection";
-
-    // 3) Embed config (ONLY if you are using embed tokens from a backend).
-    //    For now this is a placeholder. Once your backend returns real values,
-    //    you can fill these in and call embedPowerBIReport().
-    const POWER_BI_EMBED_CONFIG = {
-      type: "report",
-      id: "YOUR_REPORT_ID",
-      embedUrl: "https://app.powerbi.com/reportEmbed?reportId=YOUR_REPORT_ID&groupId=YOUR_WORKSPACE_ID",
-      accessToken: "YOUR_EMBED_TOKEN", // get from your backend
-      tokenType: window["powerbi-client"]
-        ? window["powerbi-client"].models.TokenType.Embed
-        : null,
-      settings: {
-        panes: {
-          filters: { visible: false },
-          pageNavigation: { visible: true }
-        }
-      }
-    };
-
-    const defaultItems = [
-      {
-        id: "i1",
-        name: "Nitrile Exam Gloves Medium",
-        dept: "2 SOUTH",
-        vendor_item: "Medline MDS2501",
-        on_hand: 3,
-        par_level: 10,
-        on_order: 5,
-        vendor_status: "Backordered",
-        notes: "Using alternate brand where available.",
-        photoData: ""
-      },
-      {
-        id: "i2",
-        name: "IV Start Kit",
-        dept: "3 EAST",
-        vendor_item: "Cardinal IVK-100",
-        on_hand: 15,
-        par_level: 30,
-        on_order: 0,
-        vendor_status: "Normal",
-        notes: "",
-        photoData: ""
-      },
-      {
-        id: "i3",
-        name: "10 mL Saline Flush",
-        dept: "ED",
-        vendor_item: "BD 306559",
-        on_hand: 120,
-        par_level: 100,
-        on_order: 200,
-        vendor_status: "Normal",
-        notes: "",
-        photoData: ""
-      },
-      {
-        id: "i4",
-        name: "Suction Canister 1200 mL",
-        dept: "ICU",
-        vendor_item: "Medline DYND50265",
-        on_hand: 0,
-        par_level: 20,
-        on_order: 40,
-        vendor_status: "Backordered",
-        notes: "Priority for next truck.",
-        photoData: ""
-      }
-    ];
+    const STORAGE_KEY = "phc_overstock_items_v2";
 
     let items = [];
-    let nextId = 1000;
+    let photoDataPending = null; // holds base64 image when selecting a photo
 
-    // Barcode scanning state
-    let currentScanItemId = null;
-    let codeReader = null;
-
-    // =========================
-    // 2 — HELPERS
-    // =========================
+    // Load existing data
     function loadItems() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          items = JSON.parse(raw);
-        } else {
-          items = defaultItems.map(x => ({ ...x }));
-        }
-        items.forEach(it => {
-          if (!("photoData" in it)) it.photoData = "";
-        });
+        items = raw ? JSON.parse(raw) : [];
       } catch (e) {
-        console.warn("Error loading items:", e);
-        items = defaultItems.map(x => ({ ...x }));
+        console.error("Error loading items:", e);
+        items = [];
       }
-
-      nextId =
-        items.reduce((max, it) => {
-          const num = parseInt(String(it.id).replace(/\D/g, ""), 10);
-          return isNaN(num) ? max : Math.max(max, num);
-        }, 1000) + 1;
     }
 
     function saveItems() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-      } catch (e) {
-        console.warn("Error saving items:", e);
-      }
-    }
-
-    function resetItems() {
-      if (!confirm("Reset to sample list? This will erase current entries on this device.")) return;
-      items = defaultItems.map(x => ({ ...x }));
-      saveItems();
-      renderTable();
-
-      // Optional: also sync the sample set to Power BI
-      // syncAllItemsToPowerBI();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     }
 
     function computeStatus(item) {
-      const onHand = Number(item.on_hand) || 0;
-      const par = Number(item.par_level) || 0;
-      const vendor = (item.vendor_status || "").toLowerCase();
+      const qty = Number(item.quantity || 0);
+      const par = Number(item.parLevel || 0);
 
-      if (vendor === "backordered" || vendor === "out" || onHand <= 0) {
-        return "bo";
-      }
-      if (par > 0 && onHand < par) {
-        return "low";
-      }
-      return "ok";
+      if (!par && !qty) return { label: "OK", className: "status-ok" };
+      if (par === 0) return { label: "OK", className: "status-ok" };
+
+      if (qty < par) return { label: "LOW", className: "status-low" };
+      if (qty > par) return { label: "OVERSTOCK", className: "status-over" };
+
+      return { label: "OK", className: "status-ok" };
     }
 
-    // =========================
-    // 3 — POWER BI INTEGRATION
-    // =========================
-    function powerBIConfiguredForPush() {
-      return (
-        POWER_BI_PUSH_URL &&
-        !POWER_BI_PUSH_URL.includes("YOUR_TENANT_ID") &&
-        !POWER_BI_PUSH_URL.includes("YOUR_DATASET_ID") &&
-        !POWER_BI_PUSH_URL.includes("YOUR_PUSH_KEY")
-      );
-    }
+    function applyFilters(baseItems) {
+      const deptFilter = document.getElementById("filter-dept").value.trim();
+      const searchText = document
+        .getElementById("search-text")
+        .value.trim()
+        .toLowerCase();
 
-    async function pushItemToPowerBI(item) {
-      if (!powerBIConfiguredForPush()) {
-        // Silent no-op until you configure real URL
-        return;
-      }
+      return baseItems.filter((item) => {
+        if (deptFilter && item.department !== deptFilter) return false;
 
-      const statusCode = computeStatus(item);
-      const systemStatus =
-        statusCode === "bo"
-          ? "Backordered / Out"
-          : statusCode === "low"
-          ? "Low stock"
-          : "OK";
+        if (searchText) {
+          const blob = (
+            (item.department || "") +
+            " " +
+            (item.itemName || "") +
+            " " +
+            (item.itemNumber || "") +
+            " " +
+            (item.notes || "") +
+            " " +
+            (item.location || "")
+          )
+            .toLowerCase()
+            .includes(searchText);
 
-      // Define one row for your streaming/push dataset.
-      // Make sure your Power BI dataset has matching columns.
-      const row = {
-        ItemName: item.name || "",
-        Department: item.dept || "",
-        VendorItem: item.vendor_item || "",
-        OnHand: Number(item.on_hand) || 0,
-        ParLevel: Number(item.par_level) || 0,
-        OnOrder: Number(item.on_order) || 0,
-        VendorStatus: item.vendor_status || "",
-        SystemStatus: systemStatus,
-        Notes: item.notes || "",
-        // Good for trending/time series
-        Timestamp: new Date().toISOString()
-      };
-
-      try {
-        const res = await fetch(POWER_BI_PUSH_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify([row])
-        });
-
-        if (!res.ok) {
-          console.error("Failed to push to Power BI:", await res.text());
+          if (!blob) return false;
         }
-      } catch (err) {
-        console.error("Error pushing to Power BI:", err);
-      }
-    }
 
-    async function syncAllItemsToPowerBI() {
-      if (!powerBIConfiguredForPush()) {
-        alert("Configure POWER_BI_PUSH_URL in the script before syncing to Power BI.");
-        return;
-      }
-      if (!items.length) {
-        alert("No items to sync.");
-        return;
-      }
-
-      // Simple approach: send all current items as one batch.
-      const payload = items.map(item => {
-        const statusCode = computeStatus(item);
-        const systemStatus =
-          statusCode === "bo"
-            ? "Backordered / Out"
-            : statusCode === "low"
-            ? "Low stock"
-            : "OK";
-        return {
-          ItemName: item.name || "",
-          Department: item.dept || "",
-          VendorItem: item.vendor_item || "",
-          OnHand: Number(item.on_hand) || 0,
-          ParLevel: Number(item.par_level) || 0,
-          OnOrder: Number(item.on_order) || 0,
-          VendorStatus: item.vendor_status || "",
-          SystemStatus: systemStatus,
-          Notes: item.notes || "",
-          Timestamp: new Date().toISOString()
-        };
+        return true;
       });
-
-      try {
-        const res = await fetch(POWER_BI_PUSH_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-          console.error("Failed to sync all to Power BI:", await res.text());
-          alert("Sync to Power BI failed. Check console for details.");
-        } else {
-          alert("All items synced to Power BI dataset.");
-        }
-      } catch (err) {
-        console.error("Error syncing to Power BI:", err);
-        alert("Sync to Power BI error. Check console for details.");
-      }
     }
 
-    function openPowerBIReport() {
-      if (
-        !POWER_BI_FULL_REPORT_URL ||
-        POWER_BI_FULL_REPORT_URL.includes("YOUR_WORKSPACE_ID") ||
-        POWER_BI_FULL_REPORT_URL.includes("YOUR_REPORT_ID")
-      ) {
-        alert("Set POWER_BI_FULL_REPORT_URL in the script to open your Power BI report.");
-        return;
-      }
-      window.open(POWER_BI_FULL_REPORT_URL, "_blank");
-    }
-
-    function embedPowerBIReport() {
-      if (!window["powerbi-client"]) {
-        console.warn("powerbi-client not loaded.");
-        return;
-      }
-      if (
-        !POWER_BI_EMBED_CONFIG ||
-        !POWER_BI_EMBED_CONFIG.accessToken ||
-        POWER_BI_EMBED_CONFIG.accessToken === "YOUR_EMBED_TOKEN"
-      ) {
-        console.warn("Power BI embed config not set yet.");
-        return;
-      }
-
-      const powerbiContainer = document.getElementById("powerbiContainer");
-      const powerbi = new window["powerbi-client"].service.Service(
-        window["powerbi-client"].factories.hpmFactory,
-        window["powerbi-client"].factories.wpmpFactory,
-        window["powerbi-client"].factories.routerFactory
-      );
-
-      powerbi.reset(powerbiContainer);
-      powerbi.embed(powerbiContainer, POWER_BI_EMBED_CONFIG);
-    }
-
-    // =========================
-    // 4 — BARCODE SCANNING
-    // =========================
-    async function startScanForItem(itemId) {
-      currentScanItemId = itemId;
-      const overlay = document.getElementById("scannerOverlay");
-      const video = document.getElementById("scannerVideo");
-      overlay.style.display = "flex";
-
-      if (!codeReader) {
-        codeReader = new ZXing.BrowserMultiFormatReader();
-      }
-
-      try {
-        const devices = await codeReader.listVideoInputDevices();
-
-        // Try to pick a back-facing / environment camera
-        let backCam = devices.find(d =>
-          (d.label || "").toLowerCase().includes("back") ||
-          (d.label || "").toLowerCase().includes("environment")
-        );
-
-        if (!backCam && devices.length > 1) {
-          // Fallback: last camera is often the rear one
-          backCam = devices[devices.length - 1];
-        }
-
-        const chosenDeviceId = (backCam ? backCam.deviceId : devices[0]?.deviceId);
-
-        await codeReader.decodeFromVideoDevice(chosenDeviceId, video, (result, err) => {
-          if (result) {
-            handleScanResult(result.getText());
-          }
-        });
-      } catch (err) {
-        console.error(err);
-        alert("Unable to start camera / scanner. Check camera permissions on this device.");
-        stopScan();
-      }
-    }
-
-    function handleScanResult(text) {
-      if (!currentScanItemId) return;
-      const idx = items.findIndex(it => String(it.id) === String(currentScanItemId));
-      if (idx === -1) return;
-      items[idx].vendor_item = text;
-      saveItems();
-      stopScan();
-      renderTable();
-
-      // Push updated row to Power BI
-      pushItemToPowerBI(items[idx]);
-    }
-
-    function stopScan() {
-      if (codeReader) {
-        try { codeReader.reset(); } catch (e) {}
-      }
-      const overlay = document.getElementById("scannerOverlay");
-      overlay.style.display = "none";
-      currentScanItemId = null;
-    }
-
-    // =========================
-    // 5 — RENDER
-    // =========================
     function renderTable() {
-      const tbody = document.getElementById("itemsBody");
+      const tbody = document.getElementById("items-body");
       tbody.innerHTML = "";
 
-      let countBo = 0, countLow = 0, countOk = 0;
+      const filtered = applyFilters(items);
+      document.getElementById("item-count").textContent = filtered.length;
 
-      items.forEach(item => {
-        const status = computeStatus(item);
-        if (status === "bo") countBo++;
-        else if (status === "low") countLow++;
-        else countOk++;
-
+      if (filtered.length === 0) {
         const tr = document.createElement("tr");
-        tr.className =
-          status === "bo" ? "row-bo" :
-          status === "low" ? "row-low" :
-          "row-ok";
+        const td = document.createElement("td");
+        td.colSpan = 7;
+        td.textContent = "No items logged yet.";
+        td.style.textAlign = "center";
+        td.style.color = "#777";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
 
-        const statusLabel =
-          status === "bo" ? "Backordered / Out" :
-          status === "low" ? "Low stock" :
-          "OK";
+      filtered.forEach((item, index) => {
+        const tr = document.createElement("tr");
 
-        const pillClass =
-          status === "bo" ? "pill-bo" :
-          status === "low" ? "pill-low" :
-          "pill-ok";
-
-        tr.innerHTML = `
-          <td>
-            <input type="text" data-id="${item.id}" data-field="name" value="${item.name || ""}">
-          </td>
-          <td>
-            <input type="text" data-id="${item.id}" data-field="dept" value="${item.dept || ""}">
-          </td>
-          <td>
-            <input type="text" data-id="${item.id}" data-field="vendor_item" value="${item.vendor_item || ""}">
-            <button type="button" class="scan-btn" data-id="${item.id}">Scan barcode</button>
-          </td>
-          <td>
-            ${item.photoData
-              ? `<img src="${item.photoData}" alt="Item photo" class="photo-thumb">`
-              : `<div class="photo-hint">No photo yet</div>`
-            }
-            <button type="button" class="photo-btn" data-id="${item.id}">Add / Change photo</button>
-            <input type="file" accept="image/*" capture="environment"
-                   data-id="${item.id}" class="photo-input" style="display:none;">
-          </td>
-          <td>
-            <input type="number" min="0" data-id="${item.id}" data-field="on_hand" value="${item.on_hand ?? ""}">
-          </td>
-          <td>
-            <input type="number" min="0" data-id="${item.id}" data-field="par_level" value="${item.par_level ?? ""}">
-          </td>
-          <td>
-            <input type="number" min="0" data-id="${item.id}" data-field="on_order" value="${item.on_order ?? ""}">
-          </td>
-          <td>
-            <select data-id="${item.id}" data-field="vendor_status">
-              <option value="Normal" ${item.vendor_status === "Normal" ? "selected" : ""}>Normal</option>
-              <option value="Backordered" ${item.vendor_status === "Backordered" ? "selected" : ""}>Backordered</option>
-              <option value="Out" ${item.vendor_status === "Out" ? "selected" : ""}>Out</option>
-            </select>
-          </td>
-          <td>
-            <span class="status-pill ${pillClass}">${statusLabel}</span>
-          </td>
-          <td>
-            <textarea data-id="${item.id}" data-field="notes">${item.notes || ""}</textarea>
-          </td>
-          <td>
-            <button type="button" class="delete-btn" data-action="delete" data-id="${item.id}">X</button>
-          </td>
+        // Dept
+        const tdDept = document.createElement("td");
+        tdDept.innerHTML = `
+          <div>${item.department || ""}</div>
+          <div class="small-text">${item.location || ""}</div>
         `;
+        tr.appendChild(tdDept);
 
+        // Item
+        const tdItem = document.createElement("td");
+        tdItem.innerHTML = `
+          <div><strong>${item.itemName || ""}</strong></div>
+          <div class="small-text">${item.itemNumber || ""}</div>
+        `;
+        tr.appendChild(tdItem);
+
+        // Qty / PAR
+        const tdQty = document.createElement("td");
+        tdQty.innerHTML = `
+          <div>${item.quantity ?? ""} / ${item.parLevel ?? ""}</div>
+          ${
+            item.expiration
+              ? `<div class="small-text">Exp: ${item.expiration}</div>`
+              : ""
+          }
+        `;
+        tr.appendChild(tdQty);
+
+        // Status
+        const tdStatus = document.createElement("td");
+        const { label, className } = computeStatus(item);
+        const span = document.createElement("span");
+        span.className = "status-pill " + className;
+        span.textContent = label;
+        tdStatus.appendChild(span);
+        tr.appendChild(tdStatus);
+
+        // Photo
+        const tdPhoto = document.createElement("td");
+        if (item.photoData) {
+          const img = document.createElement("img");
+          img.src = item.photoData;
+          img.className = "photo-thumb";
+          img.title = "Tap to enlarge";
+          img.addEventListener("click", () => openPhotoModal(item.photoData));
+          tdPhoto.appendChild(img);
+        } else {
+          const spanNo = document.createElement("span");
+          spanNo.className = "no-photo";
+          spanNo.textContent = "No photo";
+          tdPhoto.appendChild(spanNo);
+        }
+        tr.appendChild(tdPhoto);
+
+        // Notes
+        const tdNotes = document.createElement("td");
+        tdNotes.textContent = item.notes || "";
+        tr.appendChild(tdNotes);
+
+        // Actions
+        const tdActions = document.createElement("td");
+        tdActions.className = "actions";
+
+        const btnEdit = document.createElement("button");
+        btnEdit.type = "button";
+        btnEdit.className = "btn-secondary";
+        btnEdit.textContent = "Edit";
+        btnEdit.addEventListener("click", () => startEditItem(item.id));
+        tdActions.appendChild(btnEdit);
+
+        const btnDelete = document.createElement("button");
+        btnDelete.type = "button";
+        btnDelete.className = "btn-danger";
+        btnDelete.style.marginLeft = "4px";
+        btnDelete.textContent = "Del";
+        btnDelete.addEventListener("click", () => deleteItem(item.id));
+        tdActions.appendChild(btnDelete);
+
+        tr.appendChild(tdActions);
         tbody.appendChild(tr);
       });
-
-      document.getElementById("countBo").textContent = countBo;
-      document.getElementById("countLow").textContent = countLow;
-      document.getElementById("countOk").textContent = countOk;
-
-      attachListeners();
     }
 
-    // =========================
-    // 6 — LISTENERS
-    // =========================
-    function attachListeners() {
-      const tbody = document.getElementById("itemsBody");
-
-      // Text + textarea
-      tbody.querySelectorAll("input[type='text'][data-id], textarea[data-id]").forEach(el => {
-        el.addEventListener("input", () => {
-          const id = el.getAttribute("data-id");
-          const field = el.getAttribute("data-field");
-          const idx = items.findIndex(it => String(it.id) === String(id));
-          if (idx === -1) return;
-          items[idx][field] = el.value;
-          saveItems();
-
-          // Push updated row to Power BI
-          pushItemToPowerBI(items[idx]);
-        });
-      });
-
-      // Numbers + vendor status
-      tbody.querySelectorAll("input[type='number'][data-id], select[data-id]").forEach(el => {
-        el.addEventListener("change", () => {
-          const id = el.getAttribute("data-id");
-          const field = el.getAttribute("data-field");
-          const idx = items.findIndex(it => String(it.id) === String(id));
-          if (idx === -1) return;
-          if (el.type === "number") {
-            items[idx][field] = el.value === "" ? "" : Number(el.value);
-          } else {
-            items[idx][field] = el.value;
-          }
-          saveItems();
-          renderTable();
-
-          // Push updated row to Power BI
-          pushItemToPowerBI(items[idx]);
-        });
-      });
-
-      // Photo buttons
-      tbody.querySelectorAll(".photo-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-id");
-          const input = tbody.querySelector(`.photo-input[data-id="${id}"]`);
-          if (input) input.click();
-        });
-      });
-
-      // Photo input -> FileReader
-      tbody.querySelectorAll(".photo-input").forEach(input => {
-        input.addEventListener("change", () => {
-          const file = input.files && input.files[0];
-          if (!file) return;
-
-          const id = input.getAttribute("data-id");
-          const idx = items.findIndex(it => String(it.id) === String(id));
-          if (idx === -1) return;
-
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            items[idx].photoData = e.target.result;
-            saveItems();
-            renderTable();
-
-            // Optional: you could push to Power BI, but photos usually stay local.
-          };
-          reader.readAsDataURL(file);
-        });
-      });
-
-      // Scan barcode buttons
-      tbody.querySelectorAll(".scan-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-id");
-          startScanForItem(id);
-        });
-      });
-
-      // Delete buttons
-      tbody.querySelectorAll("button[data-action='delete']").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-id");
-          items = items.filter(it => String(it.id) !== String(id));
-          saveItems();
-          renderTable();
-          // You can optionally sync to Power BI again here.
-        });
-      });
+    function clearForm() {
+      document.getElementById("item-form").reset();
+      document.getElementById("edit-index").value = "";
+      document.getElementById("form-title").textContent = "Add New Item";
+      document.getElementById("save-btn").textContent = "Save Item";
+      photoDataPending = null;
     }
 
-    function addNewItem() {
-      const newItem = {
-        id: "i" + nextId++,
-        name: "",
-        dept: "",
-        vendor_item: "",
-        on_hand: "",
-        par_level: "",
-        on_order: "",
-        vendor_status: "Normal",
-        notes: "",
-        photoData: ""
+    function handleSave(e) {
+      e.preventDefault();
+
+      const dept = document.getElementById("department").value.trim();
+      const location = document.getElementById("location").value.trim();
+      const itemName = document.getElementById("item-name").value.trim();
+      const itemNumber = document
+        .getElementById("item-number")
+        .value.trim();
+      const quantity = document.getElementById("quantity").value;
+      const parLevel = document.getElementById("par-level").value;
+      const expiration = document.getElementById("expiration").value;
+      const notes = document.getElementById("notes").value.trim();
+
+      if (!dept || !itemName || quantity === "" || parLevel === "") {
+        alert("Department, Item, Qty on Hand, and PAR are required.");
+        return;
+      }
+
+      const editId = document.getElementById("edit-index").value;
+      const isEdit = editId !== "";
+
+      const data = {
+        id: isEdit ? editId : crypto.randomUUID(),
+        department: dept,
+        location,
+        itemName,
+        itemNumber,
+        quantity: Number(quantity),
+        parLevel: Number(parLevel),
+        expiration: expiration || "",
+        notes,
+        photoData: photoDataPending ?? null,
+        updatedAt: new Date().toISOString(),
       };
-      items.push(newItem);
+
+      if (isEdit) {
+        const index = items.findIndex((i) => i.id === editId);
+        if (index !== -1) {
+          // Keep existing photo if we didn't select a new one
+          if (photoDataPending === null) {
+            data.photoData = items[index].photoData;
+          }
+          items[index] = data;
+        }
+      } else {
+        items.push(data);
+      }
+
+      saveItems();
+      clearForm();
+      renderTable();
+    }
+
+    function startEditItem(id) {
+      const item = items.find((i) => i.id === id);
+      if (!item) return;
+
+      document.getElementById("edit-index").value = item.id;
+      document.getElementById("department").value = item.department || "";
+      document.getElementById("location").value = item.location || "";
+      document.getElementById("item-name").value = item.itemName || "";
+      document.getElementById("item-number").value = item.itemNumber || "";
+      document.getElementById("quantity").value = item.quantity ?? "";
+      document.getElementById("par-level").value = item.parLevel ?? "";
+      document.getElementById("expiration").value = item.expiration || "";
+      document.getElementById("notes").value = item.notes || "";
+
+      // Do not pre-fill file input; browser doesn't allow that.
+      photoDataPending = null;
+
+      document.getElementById("form-title").textContent = "Edit Item";
+      document.getElementById("save-btn").textContent = "Save Changes";
+
+      // Scroll up to form on mobile
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function deleteItem(id) {
+      if (!confirm("Delete this item?")) return;
+      items = items.filter((i) => i.id !== id);
       saveItems();
       renderTable();
-
-      // Push new row to Power BI
-      pushItemToPowerBI(newItem);
     }
 
-    // =========================
-    // 7 — INIT
-    // =========================
+    function resetAllData() {
+      if (
+        !confirm(
+          "This will delete ALL overstock items stored in this browser. Continue?"
+        )
+      )
+        return;
+
+      items = [];
+      saveItems();
+      renderTable();
+      clearForm();
+    }
+
+    function handlePhotoInput(e) {
+      const file = e.target.files[0];
+      if (!file) {
+        photoDataPending = null;
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        photoDataPending = event.target.result; // base64 data URL
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Simple CSV export
+    function exportCSV() {
+      if (!items.length) {
+        alert("No items to export.");
+        return;
+      }
+
+      const headers = [
+        "Department",
+        "Location",
+        "Item",
+        "ItemNumber",
+        "Quantity",
+        "ParLevel",
+        "Status",
+        "Expiration",
+        "Notes",
+        "UpdatedAt",
+      ];
+
+      const rows = items.map((item) => {
+        const status = computeStatus(item).label;
+        return [
+          item.department || "",
+          item.location || "",
+          item.itemName || "",
+          item.itemNumber || "",
+          item.quantity ?? "",
+          item.parLevel ?? "",
+          status,
+          item.expiration || "",
+          (item.notes || "").replace(/\r?\n/g, " "),
+          item.updatedAt || "",
+        ];
+      });
+
+      const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))]
+        .join("\n")
+        .replace(/\uFEFF/g, "");
+
+      const blob = new Blob(["\uFEFF" + csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "phc_overstock.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Image modal
+    function openPhotoModal(dataUrl) {
+      const modal = document.getElementById("image-modal");
+      const img = document.getElementById("modal-image");
+      img.src = dataUrl;
+      modal.style.display = "flex";
+    }
+
+    function closePhotoModal() {
+      const modal = document.getElementById("image-modal");
+      const img = document.getElementById("modal-image");
+      img.src = "";
+      modal.style.display = "none";
+    }
+
+    // Init
     document.addEventListener("DOMContentLoaded", () => {
       loadItems();
       renderTable();
 
-      document.getElementById("addItemButton").addEventListener("click", addNewItem);
-      document.getElementById("resetButton").addEventListener("click", resetItems);
-      document.getElementById("scannerCancelBtn").addEventListener("click", stopScan);
+      document
+        .getElementById("item-form")
+        .addEventListener("submit", handleSave);
+      document
+        .getElementById("clear-btn")
+        .addEventListener("click", clearForm);
+      document
+        .getElementById("reset-all-btn")
+        .addEventListener("click", resetAllData);
+      document
+        .getElementById("photo-input")
+        .addEventListener("change", handlePhotoInput);
+      document
+        .getElementById("filter-dept")
+        .addEventListener("change", renderTable);
+      document
+        .getElementById("search-text")
+        .addEventListener("input", renderTable);
+      document
+        .getElementById("export-btn")
+        .addEventListener("click", exportCSV);
 
-      const syncBtn = document.getElementById("syncAllPowerBIButton");
-      if (syncBtn) {
-        syncBtn.addEventListener("click", syncAllItemsToPowerBI);
-      }
-
-      const openReportBtn = document.getElementById("openReportButton");
-      if (openReportBtn) {
-        openReportBtn.addEventListener("click", openPowerBIReport);
-      }
-
-      // Once your embed token + IDs are real, uncomment this to show the embedded report:
-      // embedPowerBIReport();
+      // Modal close
+      const modal = document.getElementById("image-modal");
+      modal.addEventListener("click", closePhotoModal);
     });
   </script>
 </body>
